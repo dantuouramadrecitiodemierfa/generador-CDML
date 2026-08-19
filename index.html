@@ -12,17 +12,29 @@
         .box { background: white; padding: 20px; border-radius: 10px; margin: 10px auto; width: 90%; max-width: 400px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 15px;}
         button { background: #0056b3; color: white; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        button.btn-lista { background: #17a2b8; padding: 8px; font-size: 14px; margin-top: 5px; margin-right: 5px; width: auto;}
+        
         .tabs { display: flex; gap: 5px; justify-content: center; margin-bottom: 15px; }
         .tabs button { margin: 0; background: #888; padding: 10px; font-size: 14px;}
         .tabs button.activo { background: #0056b3; }
+        
         #qrcode { margin-top: 20px; display: flex; justify-content: center; }
         #btnDescargar { margin-top: 15px; background: #28a745; display: none; }
         .seccion { display: none; }
         .seccion.activa { display: block; }
-        .item-lista { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; border-left: 5px solid #0056b3;}
+        
+        /* Estilos de Lista y Categorías */
+        .btn-categoria { background: #17a2b8; padding: 15px; margin-bottom: 10px; font-size: 18px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;}
+        
+        .item-lista { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left; border-left: 5px solid #0056b3; position: relative;}
+        .item-lista.alerta-stock { border-left: 5px solid #dc3545; background: #fff3f3; }
         .item-lista h4 { margin: 0 0 5px 0; color: #0056b3; font-size: 18px;}
         .item-lista p { margin: 3px 0; font-size: 14px; color: #444; }
+        
+        /* Controles de Stock Rápido */
+        .control-stock { display: flex; align-items: center; gap: 10px; margin-top: 10px; background: #e9ecef; padding: 5px; border-radius: 5px; width: fit-content;}
+        .control-stock button { background: #444; margin: 0; padding: 5px 15px; width: auto; font-size: 18px;}
+        .control-stock span { font-size: 18px; font-weight: bold; min-width: 30px; text-align: center;}
+        
         .foto-pieza { width: 100%; max-height: 200px; object-fit: contain; background: #eee; border-radius: 5px; margin-bottom: 10px; display: none; }
         #reader { width: 100%; margin-top: 15px; border-radius: 5px; overflow: hidden;}
         #resultadoEscaneo { margin-top: 15px; padding: 15px; background: #e2f0d9; border-left: 5px solid #28a745; border-radius: 5px; text-align: left; font-size: 16px; display: none; white-space: pre-wrap;}
@@ -36,19 +48,19 @@
         
         <div class="tabs">
             <button id="btnNuevo" class="activo" onclick="cambiarTab('nuevo')">➕ Registro</button>
-            <button id="btnLista" onclick="cambiarTab('lista')">📋 Hojas</button>
+            <button id="btnLista" onclick="cambiarTab('lista')">🗂️ Categorías</button>
             <button id="btnEsc" onclick="cambiarTab('escanear')">📷 Escanear</button>
         </div>
 
         <!-- REGISTRAR -->
         <div id="secNuevo" class="seccion activa">
-            <input type="text" id="hoja" list="hojasGuardadas" placeholder="Sección / Hoja (Ej. Eléctrico)">
+            <input type="text" id="hoja" list="hojasGuardadas" placeholder="Sección / Categoría (Ej. Eléctrico)">
             <datalist id="hojasGuardadas"></datalist>
             
             <input type="text" id="pieza" placeholder="Nombre de la Pieza">
             <input type="text" id="fab" placeholder="Fabricante">
             <input type="text" id="num" placeholder="No. de Parte (Único)">
-            <input type="number" id="cant" placeholder="Cantidad en stock">
+            <input type="number" id="cant" placeholder="Cantidad Inicial en stock">
             
             <div class="file-input-wrapper">
                 <label style="font-size: 14px; color: #555; display:block; margin-bottom:5px;"><strong>📸 Foto:</strong></label>
@@ -61,13 +73,23 @@
             <button id="btnDescargar" onclick="descargar()">Descargar Etiqueta</button>
         </div>
 
-        <!-- LISTA Y HOJAS -->
+        <!-- LISTA Y CATEGORÍAS -->
         <div id="secLista" class="seccion">
-            <select id="filtroHoja" onchange="cargarLista()">
-                <option value="">Ver todas las hojas</option>
-            </select>
-            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre..." onkeyup="cargarLista()">
-            <div id="contenedorLista" style="margin-top: 15px;"></div>
+            
+            <!-- Vista de Carpetas -->
+            <div id="vistaCarpetas">
+                <h3 style="color:#555;">Apartados de Refacciones</h3>
+                <div id="contenedorCarpetas"></div>
+            </div>
+
+            <!-- Vista de Items por Carpeta -->
+            <div id="vistaItems" style="display:none;">
+                <button onclick="volverCarpetas()" style="background:#6c757d; padding:10px; margin-bottom:15px;">⬅️ Volver a Categorías</button>
+                <h3 id="tituloCarpeta" style="color:#0056b3; margin-top:0;"></h3>
+                <input type="text" id="buscador" placeholder="🔍 Buscar pieza en esta categoría..." onkeyup="cargarItemsCarpeta()">
+                <div id="contenedorLista" style="margin-top: 15px;"></div>
+            </div>
+
         </div>
 
         <!-- ESCÁNER -->
@@ -79,9 +101,11 @@
 
     <script>
         let escanerActivado = null;
-        let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V3')) || [];
+        let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V4')) || [];
         let fotoBase64 = "";
+        let carpetaActual = ""; // Guarda la carpeta que estamos viendo
 
+        // Manejo de la foto
         document.getElementById('fotoInput').addEventListener('change', function(e) {
             let file = e.target.files[0];
             if(!file) return;
@@ -106,34 +130,44 @@
         function actualizarDatalistHojas() {
             let hojasUnicas = [...new Set(inventario.map(i => i.hoja))];
             let datalist = document.getElementById('hojasGuardadas');
-            let filtro = document.getElementById('filtroHoja');
             datalist.innerHTML = "";
-            let opcionesFiltro = '<option value="">Ver todas las hojas</option>';
             hojasUnicas.forEach(h => {
-                if(h) {
-                    datalist.innerHTML += `<option value="${h}">`;
-                    opcionesFiltro += `<option value="${h}">Hoja: ${h}</option>`;
-                }
+                if(h) datalist.innerHTML += `<option value="${h}">`;
             });
-            filtro.innerHTML = opcionesFiltro;
         }
 
         function cambiarTab(tab) {
             document.querySelectorAll('.seccion').forEach(el => el.classList.remove('activa'));
             document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('activo'));
-            if(tab === 'nuevo') { document.getElementById('secNuevo').classList.add('activa'); document.getElementById('btnNuevo').classList.add('activo'); detenerEscaner(); actualizarDatalistHojas(); }
-            if(tab === 'lista') { document.getElementById('secLista').classList.add('activa'); document.getElementById('btnLista').classList.add('activo'); cargarLista(); detenerEscaner(); actualizarDatalistHojas(); }
-            if(tab === 'escanear') { document.getElementById('secEscanear').classList.add('activa'); document.getElementById('btnEsc').classList.add('activo'); iniciarEscaner(); }
+            
+            if(tab === 'nuevo') { 
+                document.getElementById('secNuevo').classList.add('activa'); 
+                document.getElementById('btnNuevo').classList.add('activo'); 
+                detenerEscaner(); 
+                actualizarDatalistHojas(); 
+            }
+            if(tab === 'lista') { 
+                document.getElementById('secLista').classList.add('activa'); 
+                document.getElementById('btnLista').classList.add('activo'); 
+                volverCarpetas(); 
+                detenerEscaner(); 
+            }
+            if(tab === 'escanear') { 
+                document.getElementById('secEscanear').classList.add('activa'); 
+                document.getElementById('btnEsc').classList.add('activo'); 
+                iniciarEscaner(); 
+            }
         }
 
+        // GUARDAR REGISTRO
         function guardarYGenerar() {
-            let h = document.getElementById('hoja').value || "General";
-            let p = document.getElementById('pieza').value;
-            let f = document.getElementById('fab').value;
+            let h = document.getElementById('hoja').value.trim() || "General";
+            let p = document.getElementById('pieza').value.trim();
+            let f = document.getElementById('fab').value.trim();
             let n = document.getElementById('num').value.trim();
-            let c = document.getElementById('cant').value;
+            let c = parseInt(document.getElementById('cant').value);
 
-            if(!p || !f || !n || !c){ alert("Faltan datos."); return; }
+            if(!p || !f || !n || isNaN(c)){ alert("Faltan datos o la cantidad no es válida."); return; }
 
             let indice = inventario.findIndex(item => item.numParte === n);
             let nuevaPieza = { hoja: h, pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoBase64 };
@@ -144,51 +178,114 @@
             } else {
                 inventario.push(nuevaPieza);
             }
-            localStorage.setItem('inventarioRSB_V3', JSON.stringify(inventario));
+            
+            localStorage.setItem('inventarioRSB_V4', JSON.stringify(inventario));
 
             let qrDiv = document.getElementById('qrcode');
             qrDiv.innerHTML = "";
-            // El QR AHORA GUARDA EL TEXTO COMPLETO PARA LOS TÉCNICOS
-            let textoQR = `Hoja: ${h}\nPieza: ${p}\nNo. Parte: ${n}\nFab: ${f}`;
+            let textoQR = `Sección: ${h}\nPieza: ${p}\nNo. Parte: ${n}\nFab: ${f}`;
             new QRCode(qrDiv, { text: textoQR, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
             document.getElementById('btnDescargar').style.display = 'block';
             
-            alert("¡Guardado en la Hoja: " + h + "!");
+            alert("¡Guardado exitosamente!");
             fotoBase64 = ""; document.getElementById('previewFoto').style.display = 'none'; document.getElementById('fotoInput').value = "";
             actualizarDatalistHojas();
         }
 
-        function cargarLista() {
+        // NAVEGACIÓN DE CATEGORÍAS
+        function volverCarpetas() {
+            document.getElementById('vistaItems').style.display = 'none';
+            document.getElementById('vistaCarpetas').style.display = 'block';
+            document.getElementById('buscador').value = "";
+            
+            let hojasUnicas = [...new Set(inventario.map(i => i.hoja))];
+            let divCarpetas = document.getElementById('contenedorCarpetas');
+            divCarpetas.innerHTML = "";
+            
+            if(hojasUnicas.length === 0) {
+                divCarpetas.innerHTML = "<p>Aún no hay categorías registradas.</p>";
+                return;
+            }
+
+            hojasUnicas.forEach(hoja => {
+                let itemsEnHoja = inventario.filter(i => i.hoja === hoja).length;
+                divCarpetas.innerHTML += `
+                    <button class="btn-categoria" onclick="abrirCarpeta('${hoja}')">
+                        <span>📁 ${hoja}</span>
+                        <span style="background:white; color:#17a2b8; padding:2px 8px; border-radius:10px; font-size:14px;">${itemsEnHoja} piezas</span>
+                    </button>
+                `;
+            });
+        }
+
+        function abrirCarpeta(hoja) {
+            carpetaActual = hoja;
+            document.getElementById('vistaCarpetas').style.display = 'none';
+            document.getElementById('vistaItems').style.display = 'block';
+            document.getElementById('tituloCarpeta').innerText = `📁 Sección: ${hoja}`;
+            cargarItemsCarpeta();
+        }
+
+        function cargarItemsCarpeta() {
             let divLista = document.getElementById('contenedorLista');
             divLista.innerHTML = "";
-            let filtroHoja = document.getElementById('filtroHoja').value;
             let buscador = document.getElementById('buscador').value.toLowerCase();
             
             let filtrados = inventario.filter(item => {
-                let coincideHoja = filtroHoja === "" || item.hoja === filtroHoja;
+                let coincideHoja = item.hoja === carpetaActual;
                 let coincideTexto = item.pieza.toLowerCase().includes(buscador) || item.numParte.toLowerCase().includes(buscador);
                 return coincideHoja && coincideTexto;
             });
 
-            if(filtrados.length === 0) { divLista.innerHTML = "<p>Vacío.</p>"; return; }
+            if(filtrados.length === 0) { divLista.innerHTML = "<p>No hay piezas que coincidan.</p>"; return; }
 
             filtrados.forEach(item => {
                 let imgTag = item.foto ? `<img src="${item.foto}" class="foto-pieza" style="display:block;">` : '';
+                
+                // LÓGICA DE ALERTA DE STOCK (3 piezas o menos)
+                let esStockBajo = item.cantidad <= 3;
+                let claseAlerta = esStockBajo ? 'alerta-stock' : '';
+                let mensajeAlerta = esStockBajo ? `<p style="color:#dc3545; font-weight:bold; font-size:16px;">⚠️ ¡STOCK BAJO!</p>` : '';
+
                 divLista.innerHTML += `
-                    <div class="item-lista">
-                        <span style="background:#444; color:white; padding:3px 8px; border-radius:10px; font-size:12px;">Hoja: ${item.hoja}</span>
+                    <div class="item-lista ${claseAlerta}">
+                        ${mensajeAlerta}
                         ${imgTag}
                         <h4>${item.pieza}</h4>
-                        <p><strong>Fab:</strong> ${item.fab}</p>
-                        <p><strong>No. Parte:</strong> ${item.numParte}</p>
-                        <p><strong>Stock:</strong> <span style="color:#28a745; font-weight:bold;">${item.cantidad}</span></p>
-                        <button class="btn-lista" style="background:#dc3545;" onclick="borrarPieza('${item.numParte}')">Borrar</button>
+                        <p><strong>Fab:</strong> ${item.fab} | <strong>No. Parte:</strong> ${item.numParte}</p>
+                        
+                        <div class="control-stock">
+                            <button onclick="editarStock('${item.numParte}', -1)">-</button>
+                            <span>${item.cantidad}</span>
+                            <button onclick="editarStock('${item.numParte}', 1)">+</button>
+                        </div>
+                        
+                        <button style="background:#dc3545; padding:5px; width:auto; font-size:12px; margin-top:10px;" onclick="borrarPieza('${item.numParte}')">🗑️ Eliminar Pieza</button>
                     </div>`;
             });
         }
 
+        // EDICIÓN RÁPIDA DE STOCK
+        function editarStock(numParte, cambio) {
+            let indice = inventario.findIndex(item => item.numParte === numParte);
+            if(indice >= 0) {
+                let nuevaCantidad = inventario[indice].cantidad + cambio;
+                if(nuevaCantidad < 0) nuevaCantidad = 0; // No permitir stock negativo
+                
+                inventario[indice].cantidad = nuevaCantidad;
+                localStorage.setItem('inventarioRSB_V4', JSON.stringify(inventario));
+                
+                // Recargar la lista para mostrar el número y las alertas actualizadas
+                cargarItemsCarpeta();
+            }
+        }
+
         function borrarPieza(n) {
-            if(confirm("¿Borrar?")) { inventario = inventario.filter(i => i.numParte !== n); localStorage.setItem('inventarioRSB_V3', JSON.stringify(inventario)); cargarLista(); }
+            if(confirm("¿Seguro que quieres borrar esta pieza?")) { 
+                inventario = inventario.filter(i => i.numParte !== n); 
+                localStorage.setItem('inventarioRSB_V4', JSON.stringify(inventario)); 
+                cargarItemsCarpeta(); 
+            }
         }
 
         function descargar() {
@@ -200,6 +297,7 @@
             let link = document.createElement('a'); link.download = 'QR_RSB.png'; link.href = nC.toDataURL('image/png'); link.click();
         }
 
+        // ESCÁNER
         function iniciarEscaner() {
             document.getElementById('resultadoEscaneo').style.display = 'none';
             if(escanerActivado) { escanerActivado.clear(); }
@@ -214,7 +312,6 @@
             let resDiv = document.getElementById('resultadoEscaneo');
             resDiv.style.display = 'block';
             
-            // Revisa si el texto del QR tiene el formato nuevo
             if(textoQR.includes("No. Parte:")) {
                 resDiv.style.borderLeftColor = "#28a745"; resDiv.style.backgroundColor = "#e2f0d9";
                 resDiv.innerHTML = `<strong>✅ Pieza Leída:</strong><br><br>${textoQR}`;
@@ -223,6 +320,7 @@
                 resDiv.innerHTML = `<strong>⚠️ QR Antiguo:</strong><br>${textoQR}`;
             }
         }
+        
         actualizarDatalistHojas();
     </script>
 </body>
