@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS | RSB Transmissions</title>
+    <title>WMS | RSB Transmissions (Cloud)</title>
     <link rel="manifest" href="manifest.json">
+    <!-- LIBRERÍAS DE CÓDIGO QR Y CÁMARA -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    
+    <!-- LIBRERÍAS DE LA NUBE FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         :root {
             --rsb-blue: #143380;
@@ -22,6 +28,7 @@
         .header { background: var(--surface); padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;}
         .header img { max-height: 45px; }
         .header h1 { margin: 5px 0 0 0; font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
+        .cloud-badge { background: #e2f0d9; color: #28a745; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; display: inline-block; margin-top: 5px; }
         
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         
@@ -77,6 +84,7 @@
     <div class="header">
         <img src="logo.png" alt="RSB Transmissions" onerror="this.style.display='none'">
         <h1>Sistema de Control WMS</h1>
+        <div class="cloud-badge">☁️ Conectado a la Nube</div>
     </div>
 
     <div class="container">
@@ -121,10 +129,10 @@
                 <img id="previewFoto">
             </div>
 
-            <button class="btn-primary" onclick="guardarRegistro()">Guardar en Base de Datos</button>
+            <button class="btn-primary" onclick="guardarRegistro()" id="btnGuardar">Guardar en Base de Datos</button>
         </div>
 
-        <!-- 2. INVENTARIO Y FICHAS TÉCNICAS -->
+        <!-- 2. INVENTARIO -->
         <div id="secLista" class="seccion">
             
             <div class="input-group" style="margin-bottom: 20px;">
@@ -155,12 +163,48 @@
     </div>
 
     <script>
+        // ==========================================
+        // ☁️ CONFIGURACIÓN FIREBASE (LA NUBE)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDY9r31hs26gt_63myKdkLMsCre8dm33g0",
+            authDomain: "inventario-rsb.firebaseapp.com",
+            projectId: "inventario-rsb",
+            storageBucket: "inventario-rsb.firebasestorage.app",
+            messagingSenderId: "550282196380",
+            appId: "1:550282196380:web:df8e7b4a4b2cbaca0b0459"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        // ==========================================
+
         let escanerActivado = null;
-        let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V5')) || [];
+        let inventario = []; 
         let fotoBase64 = "";
         let modoVista = 'carpetas';
         let carpetaActual = "";
 
+        // ESCUCHADOR EN TIEMPO REAL: Se activa cada vez que alguien, en cualquier cel, cambia algo
+        db.ref('inventario').on('value', (snapshot) => {
+            const data = snapshot.val();
+            inventario = [];
+            if(data) {
+                // Convertimos el diccionario de Firebase a un arreglo para poder filtrarlo
+                for(let key in data) {
+                    inventario.push(data[key]);
+                }
+            }
+            
+            actualizarDatalistHojas();
+            
+            // Actualizar la pantalla instantáneamente sin que el usuario haga nada
+            if(modoVista === 'carpetas') volverCarpetas();
+            else if(modoVista === 'carpetaDetalle') abrirCarpeta(carpetaActual);
+            else if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
+        });
+
+        // Procesar Fotografía
         document.getElementById('fotoInput').addEventListener('change', function(e) {
             let file = e.target.files[0];
             if(!file) return;
@@ -173,7 +217,7 @@
                     let scaleSize = 400 / img.width;
                     canvas.width = 400; canvas.height = img.height * scaleSize;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.6); // Exprimido al 60% para que suba rápido
                     document.getElementById('previewFoto').src = fotoBase64;
                     document.getElementById('previewFoto').style.display = 'block';
                 }
@@ -219,27 +263,35 @@
 
             if(!p || !f || !n || isNaN(c)){ alert("Por favor, complete todos los campos requeridos."); return; }
 
+            // Cambiar texto de botón para avisar que está subiendo a la nube
+            document.getElementById('btnGuardar').innerText = "Subiendo a la nube ☁️...";
+
+            // Buscar si ya existe la pieza para no borrar su foto si no subimos una nueva
             let indice = inventario.findIndex(item => item.numParte === n);
-            let nuevaPieza = { hoja: h, pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoBase64 };
-            
-            if(indice >= 0) {
-                if(!fotoBase64) nuevaPieza.foto = inventario[indice].foto;
-                inventario[indice] = nuevaPieza;
-            } else {
-                inventario.push(nuevaPieza);
+            let fotoFinal = fotoBase64;
+            if(indice >= 0 && !fotoBase64) {
+                fotoFinal = inventario[indice].foto || "";
             }
+
+            let nuevaPieza = { hoja: h, pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoFinal };
             
-            localStorage.setItem('inventarioRSB_V5', JSON.stringify(inventario));
-            
-            document.getElementById('pieza').value = "";
-            document.getElementById('num').value = "";
-            document.getElementById('cant').value = "";
-            fotoBase64 = ""; 
-            document.getElementById('previewFoto').style.display = 'none'; 
-            document.getElementById('fotoInput').value = "";
-            
-            alert("Registro guardado exitosamente.");
-            cambiarTab('lista'); 
+            // GUARDAR EN FIREBASE (Se guarda bajo el Número de Parte)
+            db.ref('inventario/' + n).set(nuevaPieza).then(() => {
+                // Limpiar formulario al terminar
+                document.getElementById('pieza').value = "";
+                document.getElementById('num').value = "";
+                document.getElementById('cant').value = "";
+                fotoBase64 = ""; 
+                document.getElementById('previewFoto').style.display = 'none'; 
+                document.getElementById('fotoInput').value = "";
+                document.getElementById('btnGuardar').innerText = "Guardar en Base de Datos";
+                
+                alert("¡Registro guardado en la Nube!");
+                cambiarTab('lista'); 
+            }).catch((error) => {
+                alert("Error al guardar: Asegúrate de haber habilitado la base de datos en Modo de Prueba.");
+                document.getElementById('btnGuardar').innerText = "Guardar en Base de Datos";
+            });
         }
 
         function volverCarpetas() {
@@ -299,20 +351,13 @@
 
         function dibujarTarjetas(listaItems) {
             let divLista = document.getElementById('contenedorLista');
-            
-            if(listaItems.length === 0) { 
-                divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; 
-                return; 
-            }
+            if(listaItems.length === 0) { divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; return; }
 
-            // 1. Armar todo el HTML de las tarjetas
             let htmlTarjetas = "";
             listaItems.forEach((item, index) => {
                 let imgTag = item.foto ? `<img src="${item.foto}">` : `<span style="color:#ccc; font-size:10px;">SIN FOTO</span>`;
                 let claseAlerta = item.cantidad <= 3 ? 'border-left: 4px solid var(--rsb-red);' : '';
                 let mensajeAlerta = item.cantidad <= 3 ? `<span class="badge-danger">Stock Bajo</span>` : '';
-                
-                // Generamos un ID súper seguro basado en el número de lista (index)
                 let safeId = "qr-box-" + index;
 
                 htmlTarjetas += `
@@ -338,35 +383,38 @@
                             <button class="btn-circle" onclick="editarStock('${item.numParte}', -1)">-</button>
                             <span class="stock-value">${item.cantidad}</span>
                             <button class="btn-circle" onclick="editarStock('${item.numParte}', 1)">+</button>
+                            <button onclick="borrarPieza('${item.numParte}')" style="background:none; border:none; color:var(--rsb-red); font-size:16px; cursor:pointer;" title="Eliminar pieza">🗑️</button>
                         </div>
                     </div>`;
             });
 
-            // Inyectamos todo el HTML de un jalón
             divLista.innerHTML = htmlTarjetas;
 
-            // 2. Generamos los QRs ahora que las cajas ya existen
             listaItems.forEach((item, index) => {
                 let safeId = "qr-box-" + index;
                 let qrContainer = document.getElementById(safeId);
                 if(qrContainer) {
-                    qrContainer.innerHTML = ""; // Limpiar por si acaso
+                    qrContainer.innerHTML = "";
                     let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
                     new QRCode(qrContainer, { text: textoQR, width: 70, height: 70, correctLevel: QRCode.CorrectLevel.M });
                 }
             });
         }
 
+        // --- ACCIONES A LA NUBE ---
         function editarStock(numParte, cambio) {
             let indice = inventario.findIndex(item => item.numParte === numParte);
             if(indice >= 0) {
                 let nuevaCantidad = inventario[indice].cantidad + cambio;
                 if(nuevaCantidad < 0) nuevaCantidad = 0; 
-                inventario[indice].cantidad = nuevaCantidad;
-                localStorage.setItem('inventarioRSB_V5', JSON.stringify(inventario));
-                
-                if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
-                else abrirCarpeta(carpetaActual);
+                // Mandamos la orden a la nube de actualizar SOLO la cantidad
+                db.ref('inventario/' + numParte).update({ cantidad: nuevaCantidad });
+            }
+        }
+
+        function borrarPieza(numParte) {
+            if(confirm("¿Seguro que deseas eliminar esta refacción por completo?")) {
+                db.ref('inventario/' + numParte).remove();
             }
         }
 
@@ -402,8 +450,6 @@
                 resDiv.innerHTML = `<strong>⚠️ Código No Reconocido:</strong><br>${textoQR}`;
             }
         }
-        
-        actualizarDatalistHojas();
     </script>
 </body>
 </html>
