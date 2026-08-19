@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS | RSB Transmissions (V17)</title>
+    <title>WMS | RSB Transmissions (V18)</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
@@ -85,7 +85,7 @@
     <div class="header">
         <img src="logo.png" alt="RSB Transmissions" onerror="this.style.display='none'">
         <h1>Sistema de Control WMS</h1>
-        <div class="cloud-badge">☁️ Conectado a la Nube (V17)</div>
+        <div class="cloud-badge">☁️ Conectado a la Nube (V18)</div>
     </div>
 
     <div class="container">
@@ -181,6 +181,12 @@
     </div>
 
     <script>
+        console.log("=================================");
+        console.log("WMS RSB V18 - INICIANDO");
+        console.log("QRCode:", typeof QRCode);
+        console.log("Firebase:", typeof firebase);
+        console.log("=================================");
+
         const firebaseConfig = {
             apiKey: "AIzaSyDY9r31hs26gt_63myKdkLMsCre8dm33g0",
             authDomain: "inventario-rsb.firebaseapp.com",
@@ -292,54 +298,121 @@
             let n = document.getElementById('num').value.trim();
             let c = parseInt(document.getElementById('cant').value);
 
-            if(!p || !f || !n || isNaN(c)){ alert("Faltan campos por llenar."); return; }
-            document.getElementById('btnGuardar').innerText = "Subiendo a la nube ☁️...";
+            if (!p || !f || !n || isNaN(c)) {
+                alert("Faltan campos por llenar.");
+                return;
+            }
+
+            if (typeof QRCode === "undefined") {
+                alert("ERROR: No se pudo cargar la librería para generar códigos QR.\n\nRevisa la consola del navegador (F12).");
+                console.error("QRCode no está disponible.");
+                return;
+            }
+
+            const btn = document.getElementById('btnGuardar');
+            btn.innerText = "Subiendo a la nube ☁️...";
+            btn.disabled = true;
 
             let indice = inventario.findIndex(item => item.numParte === n);
             let fotoFinal = fotoBase64;
-            if(indice >= 0 && !fotoBase64) { fotoFinal = inventario[indice].foto || ""; }
 
-            let nuevaPieza = { hoja: h, pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoFinal };
-            
-            db.ref('inventario/' + n).set(nuevaPieza).then(() => {
-                document.getElementById('btnGuardar').innerText = "Guardar en Base de Datos";
-                
-                // Mostrar la caja del QR recién creado
-                let areaNuevo = document.getElementById('areaQRNuevo');
-                areaNuevo.style.display = 'block';
-                
-                document.getElementById('textoPiezaNuevo').innerText = p;
-                document.getElementById('textoNumNuevo').innerText = `ID: ${n}`;
-                numParteRecienCreado = n;
-                
-                let contenedor = document.getElementById('lienzoQRNuevo');
-                contenedor.innerHTML = "";
-                let textoQR = `Sección: ${h}\nPieza: ${p}\nNo. Parte: ${n}\nFab: ${f}`;
-                
-                new QRCode(contenedor, {
-                    text: textoQR,
-                    width: 200,
-                    height: 200,
-                    correctLevel: QRCode.CorrectLevel.M
+            if (indice >= 0 && !fotoBase64) {
+                fotoFinal = inventario[indice].foto || "";
+            }
+
+            let nuevaPieza = {
+                hoja: h,
+                pieza: p,
+                fab: f,
+                numParte: n,
+                cantidad: c,
+                foto: fotoFinal
+            };
+
+            db.ref('inventario/' + n).set(nuevaPieza)
+                .then(() => {
+
+                    btn.innerText = "Guardar en Base de Datos";
+                    btn.disabled = false;
+
+                    numParteRecienCreado = n;
+
+                    document.getElementById('textoPiezaNuevo').innerText = p;
+                    document.getElementById('textoNumNuevo').innerText = `ID: ${n}`;
+
+                    // Mostrar ANTES de generar el QR.
+                    const areaNuevo = document.getElementById('areaQRNuevo');
+                    areaNuevo.style.display = 'block';
+
+                    const contenedor = document.getElementById('lienzoQRNuevo');
+                    contenedor.innerHTML = "";
+
+                    const textoQR =
+                        `Sección: ${h}\n` +
+                        `Pieza: ${p}\n` +
+                        `No. Parte: ${n}\n` +
+                        `Fab: ${f}`;
+
+                    console.log("Generando QR nuevo:", textoQR);
+
+                    try {
+                        new QRCode(contenedor, {
+                            text: textoQR,
+                            width: 200,
+                            height: 200,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+
+                        console.log("QR nuevo generado correctamente.");
+
+                    } catch (error) {
+                        console.error("Error generando QR nuevo:", error);
+                        contenedor.innerHTML =
+                            '<p style="color:red;font-weight:bold;">' +
+                            'No se pudo generar el código QR.' +
+                            '</p>';
+                    }
+
+                    // Limpiar formulario, conservando el QR visible.
+                    document.getElementById('pieza').value = "";
+                    document.getElementById('num').value = "";
+                    document.getElementById('cant').value = "";
+
+                    fotoBase64 = "";
+                    document.getElementById('previewFoto').style.display = 'none';
+                    document.getElementById('fotoInput').value = "";
+
+                })
+                .catch((error) => {
+                    console.error("Error Firebase:", error);
+
+                    alert(
+                        "Error al guardar en la nube.\n\n" +
+                        error.message
+                    );
+
+                    btn.innerText = "Guardar en Base de Datos";
+                    btn.disabled = false;
                 });
-
-                // Limpiar campos de texto pero DEJAR el QR visible
-                document.getElementById('pieza').value = "";
-                document.getElementById('num').value = "";
-                document.getElementById('cant').value = "";
-                fotoBase64 = ""; 
-                document.getElementById('previewFoto').style.display = 'none'; 
-                document.getElementById('fotoInput').value = "";
-                
-            }).catch((error) => {
-                alert("Error al guardar en la nube.");
-                document.getElementById('btnGuardar').innerText = "Guardar en Base de Datos";
-            });
         }
 
         function descargarQRNuevo() {
             let canvas = document.querySelector('#lienzoQRNuevo canvas');
-            if(!canvas) return;
+            if (!canvas) {
+                const img = document.querySelector('#lienzoQRNuevo img');
+                if (img && img.complete) {
+                    canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || 200;
+                    canvas.height = img.naturalHeight || 200;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                }
+            }
+            if(!canvas) {
+                alert("No hay un código QR para descargar.");
+                return;
+            }
             let m = 20; let nC = document.createElement('canvas');
             nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
             let ctx = nC.getContext('2d');
@@ -351,39 +424,89 @@
         // PESTAÑA EXCLUSIVA DE ETIQUETAS (ARCHIVO)
         // ==========================================
         function generarQRDesdeSelect() {
-            let numParte = document.getElementById('selectPiezaQR').value;
-            let area = document.getElementById('areaQRGenerado');
-            
-            if(!numParte) {
+
+            const numParte = document.getElementById('selectPiezaQR').value;
+            const area = document.getElementById('areaQRGenerado');
+            const contenedor = document.getElementById('lienzoQR');
+
+            if (!numParte) {
+                area.style.display = 'none';
+                contenedor.innerHTML = "";
+                return;
+            }
+
+            const item = inventario.find(i => i.numParte === numParte);
+
+            if (!item) {
+                console.error("No se encontró la pieza:", numParte);
                 area.style.display = 'none';
                 return;
             }
 
-            let item = inventario.find(i => i.numParte === numParte);
-            if(!item) return;
+            if (typeof QRCode === "undefined") {
+                console.error("QRCode no está disponible.");
+                area.style.display = 'block';
+                contenedor.innerHTML =
+                    '<p style="color:red;font-weight:bold;">' +
+                    'ERROR: No se pudo cargar la librería QRCode.' +
+                    '</p>';
+                return;
+            }
 
-            // EL TRUCO: Mostrar el contenedor ANTES de llamar a la librería
+            // Mostrar primero el contenedor.
             area.style.display = 'block';
 
             document.getElementById('textoQRPieza').innerText = item.pieza;
-            document.getElementById('textoQRNum').innerText = `ID: ${item.numParte}`;
-            
-            let contenedor = document.getElementById('lienzoQR');
-            contenedor.innerHTML = ""; 
-            
-            let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
+            document.getElementById('textoQRNum').innerText =
+                `ID: ${item.numParte}`;
 
-            new QRCode(contenedor, {
-                text: textoQR,
-                width: 200,
-                height: 200,
-                correctLevel: QRCode.CorrectLevel.M
-            });
+            contenedor.innerHTML = "";
+
+            const textoQR =
+                `Sección: ${item.hoja}\n` +
+                `Pieza: ${item.pieza}\n` +
+                `No. Parte: ${item.numParte}\n` +
+                `Fab: ${item.fab}`;
+
+            console.log("Generando QR desde ETIQUETAS:", textoQR);
+
+            try {
+                new QRCode(contenedor, {
+                    text: textoQR,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                console.log("QR de ETIQUETAS generado correctamente.");
+
+            } catch (error) {
+                console.error("Error generando QR de ETIQUETAS:", error);
+
+                contenedor.innerHTML =
+                    '<p style="color:red;font-weight:bold;">' +
+                    'No se pudo generar el código QR.' +
+                    '</p>';
+            }
         }
 
         function descargarEtiquetaPestana() {
             let canvas = document.querySelector('#lienzoQR canvas');
-            if(!canvas) return;
+            if (!canvas) {
+                const img = document.querySelector('#lienzoQR img');
+                if (img && img.complete) {
+                    canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || 200;
+                    canvas.height = img.naturalHeight || 200;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                }
+            }
+            if(!canvas) {
+                alert("No hay un código QR para descargar.");
+                return;
+            }
             let m = 20; let nC = document.createElement('canvas');
             nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
             let ctx = nC.getContext('2d');
