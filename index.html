@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS | RSB Transmissions (V15)</title>
+    <title>WMS | RSB Transmissions (V16)</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
@@ -31,8 +31,9 @@
         
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         
+        /* 4 PESTAÑAS */
         .tabs { display: flex; background: var(--surface); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;}
-        .tabs button { flex: 1; padding: 12px; border: none; background: transparent; font-weight: 600; font-size: 13px; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;}
+        .tabs button { flex: 1; padding: 10px 5px; border: none; background: transparent; font-weight: 600; font-size: 11px; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;}
         .tabs button.activo { color: var(--rsb-blue); border-bottom-color: var(--rsb-blue); background: #f8fafe; }
         
         .input-group { margin-bottom: 15px; text-align: left; }
@@ -75,11 +76,6 @@
         #previewFoto { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; border-radius: 6px; }
         #reader { width: 100%; margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);}
         #resultadoEscaneo { margin-top: 15px; padding: 15px; background: #f8fafe; border-left: 4px solid var(--rsb-blue); border-radius: 4px; text-align: left; font-size: 14px; display: none; white-space: pre-wrap;}
-        
-        /* ESTILOS DEL NUEVO APARTADO DE QR */
-        #vistaQR { text-align: center; padding-top: 10px; }
-        .qr-card-display { background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: inline-block; width: 100%; box-sizing: border-box;}
-        #qrCanvasLimpio { margin: 0 auto; display: flex; justify-content: center; }
     </style>
 </head>
 <body>
@@ -87,16 +83,19 @@
     <div class="header">
         <img src="logo.png" alt="RSB Transmissions" onerror="this.style.display='none'">
         <h1>Sistema de Control WMS</h1>
-        <div class="cloud-badge">☁️ Conectado a la Nube (V15)</div>
+        <div class="cloud-badge">☁️ Conectado a la Nube (V16)</div>
     </div>
 
     <div class="container">
+        <!-- AHORA SON 4 PESTAÑAS FIJAS -->
         <div class="tabs">
-            <button id="btnNuevo" class="activo" onclick="cambiarTab('nuevo')">ALTA REFACCIÓN</button>
+            <button id="btnNuevo" class="activo" onclick="cambiarTab('nuevo')">ALTA</button>
             <button id="btnLista" onclick="cambiarTab('lista')">INVENTARIO</button>
+            <button id="btnQR" onclick="cambiarTab('qr')">ETIQUETAS</button>
             <button id="btnEsc" onclick="cambiarTab('escanear')">ESCÁNER</button>
         </div>
 
+        <!-- 1. ALTA DE REFACCIÓN -->
         <div id="secNuevo" class="seccion activa">
             <div class="input-group">
                 <label>Sección / Área</label>
@@ -127,46 +126,44 @@
             <button class="btn-primary" onclick="guardarRegistro()" id="btnGuardar">Guardar en Base de Datos</button>
         </div>
 
+        <!-- 2. INVENTARIO -->
         <div id="secLista" class="seccion">
-            <!-- VISTA DE BUSCADOR Y CARPETAS -->
-            <div id="vistaPrincipalInventario">
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <input type="text" id="buscadorGlobal" placeholder="🔍 Buscar nombre o No. Parte..." onkeyup="ejecutarBusquedaGlobal()">
-                </div>
-                
-                <div id="vistaCarpetas">
-                    <h3 style="color: var(--text); font-size: 16px; text-align: left; margin-bottom: 15px;">Áreas de Almacén</h3>
-                    <div id="contenedorCarpetas"></div>
-                </div>
-                
-                <div id="vistaItems" style="display:none;">
-                    <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
-                        <button onclick="volverCarpetas()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver a Carpetas</button>
-                        <h3 id="tituloCarpeta" style="margin:0; color: var(--rsb-blue); font-size: 16px;"></h3>
-                    </div>
-                    <div id="contenedorLista"></div>
-                </div>
+            <div class="input-group" style="margin-bottom: 20px;">
+                <input type="text" id="buscadorGlobal" placeholder="🔍 Buscar nombre o No. Parte..." onkeyup="ejecutarBusquedaGlobal()">
             </div>
-
-            <!-- APARTADO EXCLUSIVO PARA VER EL QR -->
-            <div id="vistaQR" style="display: none;">
+            <div id="vistaCarpetas">
+                <h3 style="color: var(--text); font-size: 16px; text-align: left; margin-bottom: 15px;">Áreas de Almacén</h3>
+                <div id="contenedorCarpetas"></div>
+            </div>
+            <div id="vistaItems" style="display:none;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
-                    <button onclick="cerrarVistaQR()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver al Inventario</button>
+                    <button onclick="volverCarpetas()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver</button>
+                    <h3 id="tituloCarpeta" style="margin:0; color: var(--rsb-blue); font-size: 16px;"></h3>
                 </div>
-                
-                <div class="qr-card-display">
-                    <!-- Aquí se dibuja el QR sin fallas -->
-                    <div id="qrCanvasLimpio"></div>
-                    <!-- Nombre de la pieza directo abajo -->
-                    <h2 id="qrNombrePiezaTexto" style="color: var(--rsb-blue); margin: 20px 0 5px 0; font-size: 20px;"></h2>
-                    <p id="qrNumParteTexto" style="color: var(--text-muted); font-size: 14px; margin: 0;"></p>
-                </div>
-
-                <button class="btn-primary" id="btnDescargarEtiqueta">💾 Descargar Etiqueta QR</button>
+                <div id="contenedorLista"></div>
             </div>
-
         </div>
 
+        <!-- 3. NUEVA PESTAÑA: ETIQUETAS QR -->
+        <div id="secQR" class="seccion">
+            <div class="input-group">
+                <label>Seleccionar Refacción para QR</label>
+                <select id="selectPiezaQR" onchange="generarQRDesdeSelect()">
+                    <option value="">-- Elige una pieza --</option>
+                </select>
+            </div>
+            
+            <div id="areaQRGenerado" style="display: none; text-align: center; margin-top: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <div id="lienzoQR" style="margin: 0 auto; display: flex; justify-content: center;"></div>
+                    <h2 id="textoQRPieza" style="color: var(--rsb-blue); margin: 15px 0 5px 0; font-size: 18px;"></h2>
+                    <p id="textoQRNum" style="color: var(--text-muted); font-size: 13px; margin: 0;"></p>
+                </div>
+                <button class="btn-primary" onclick="descargarEtiquetaPestana()" style="margin-top: 15px;">💾 Descargar Etiqueta QR</button>
+            </div>
+        </div>
+
+        <!-- 4. ESCÁNER -->
         <div id="secEscanear" class="seccion">
             <p style="color:var(--text-muted); font-size:14px;">Enfoque el código QR de la refacción dentro del recuadro.</p>
             <div id="reader"></div>
@@ -193,6 +190,7 @@
         let fotoBase64 = "";
         let modoVista = 'carpetas';
         let carpetaActual = "";
+        let generadorQRPestana = null;
 
         db.ref('inventario').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -201,8 +199,9 @@
                 for(let key in data) { inventario.push(data[key]); }
             }
             actualizarDatalistHojas();
-            // Evitar recargar las vistas si el usuario está viendo un QR
-            if(document.getElementById('vistaQR').style.display !== 'block'){
+            llenarSelectQR(); // Llenar la lista del QR con lo que baje de la nube
+
+            if(document.getElementById('secLista').classList.contains('activa')) {
                 if(modoVista === 'carpetas') volverCarpetas();
                 else if(modoVista === 'carpetaDetalle') abrirCarpeta(carpetaActual);
                 else if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
@@ -237,20 +236,34 @@
             hojasUnicas.forEach(h => { if(h) datalist.innerHTML += `<option value="${h}">`; });
         }
 
+        // LLENAR LA LISTA DESPLEGABLE DE LA PESTAÑA DE ETIQUETAS
+        function llenarSelectQR() {
+            let select = document.getElementById('selectPiezaQR');
+            let valorActual = select.value;
+            select.innerHTML = '<option value="">-- Elige una pieza --</option>';
+            inventario.forEach(item => {
+                select.innerHTML += `<option value="${item.numParte}">${item.pieza} (ID: ${item.numParte})</option>`;
+            });
+            select.value = valorActual; // Conservar selección si se actualiza
+        }
+
         function cambiarTab(tab) {
             document.querySelectorAll('.seccion').forEach(el => el.classList.remove('activa'));
             document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('activo'));
+            detenerEscaner();
             
             if(tab === 'nuevo') { 
                 document.getElementById('secNuevo').classList.add('activa'); 
                 document.getElementById('btnNuevo').classList.add('activo'); 
-                detenerEscaner(); actualizarDatalistHojas(); 
             }
             if(tab === 'lista') { 
                 document.getElementById('secLista').classList.add('activa'); 
                 document.getElementById('btnLista').classList.add('activo'); 
-                cerrarVistaQR(); // Asegura volver a la lista si estaba en el QR
-                detenerEscaner(); 
+                volverCarpetas(); 
+            }
+            if(tab === 'qr') { 
+                document.getElementById('secQR').classList.add('activa'); 
+                document.getElementById('btnQR').classList.add('activo'); 
             }
             if(tab === 'escanear') { 
                 document.getElementById('secEscanear').classList.add('activa'); 
@@ -266,7 +279,7 @@
             let n = document.getElementById('num').value.trim();
             let c = parseInt(document.getElementById('cant').value);
 
-            if(!p || !f || !n || isNaN(c)){ alert("Por favor, complete todos los campos requeridos."); return; }
+            if(!p || !f || !n || isNaN(c)){ alert("Faltan campos por llenar."); return; }
             document.getElementById('btnGuardar').innerText = "Subiendo a la nube ☁️...";
 
             let indice = inventario.findIndex(item => item.numParte === n);
@@ -283,11 +296,10 @@
                 document.getElementById('previewFoto').style.display = 'none'; 
                 document.getElementById('fotoInput').value = "";
                 document.getElementById('btnGuardar').innerText = "Guardar en Base de Datos";
+                
+                // MANDA AL USUARIO A LA PESTAÑA QR RECIÉN CREADA
                 alert("¡Registro guardado en la Nube!");
-                cambiarTab('lista'); 
-            }).catch((error) => {
-                alert("Error al guardar en la nube.");
-                document.getElementById('btnGuardar').innerText = "Guardar en Base de Datos";
+                irAPestanaQR(n);
             });
         }
 
@@ -296,177 +308,146 @@
             document.getElementById('buscadorGlobal').value = "";
             document.getElementById('vistaItems').style.display = 'none';
             document.getElementById('vistaCarpetas').style.display = 'block';
-            
             let hojasUnicas = [...new Set(inventario.map(i => i.hoja))];
             let divCarpetas = document.getElementById('contenedorCarpetas');
             divCarpetas.innerHTML = "";
-            
-            if(hojasUnicas.length === 0) { divCarpetas.innerHTML = "<p style='color:#6c757d; font-size:14px;'>Sin registros en la base de datos.</p>"; return; }
-
+            if(hojasUnicas.length === 0) return;
             hojasUnicas.forEach(hoja => {
-                let itemsEnHoja = inventario.filter(i => i.hoja === hoja).length;
-                divCarpetas.innerHTML += `
-                    <button class="btn-categoria" onclick="abrirCarpeta('${hoja}')">
-                        <span>📁 ${hoja}</span>
-                        <span class="badge">${itemsEnHoja} Refacciones</span>
-                    </button>
-                `;
+                let items = inventario.filter(i => i.hoja === hoja).length;
+                divCarpetas.innerHTML += `<button class="btn-categoria" onclick="abrirCarpeta('${hoja}')"><span>📁 ${hoja}</span><span class="badge">${items} Refacciones</span></button>`;
             });
         }
 
         function abrirCarpeta(hoja) {
             modoVista = 'carpetaDetalle';
             carpetaActual = hoja;
-            document.getElementById('buscadorGlobal').value = ""; 
             document.getElementById('vistaCarpetas').style.display = 'none';
             document.getElementById('vistaItems').style.display = 'block';
             document.getElementById('tituloCarpeta').innerText = `Sección: ${hoja}`;
-            let filtrados = inventario.filter(item => item.hoja === hoja);
-            dibujarTarjetas(filtrados);
+            dibujarTarjetas(inventario.filter(item => item.hoja === hoja));
         }
 
         function ejecutarBusquedaGlobal() {
             let texto = document.getElementById('buscadorGlobal').value.toLowerCase().trim();
-            if(texto === "") {
-                if(modoVista === 'busquedaGlobal') volverCarpetas();
-                return;
-            }
+            if(texto === "") { if(modoVista === 'busquedaGlobal') volverCarpetas(); return; }
             modoVista = 'busquedaGlobal';
             document.getElementById('vistaCarpetas').style.display = 'none';
             document.getElementById('vistaItems').style.display = 'block';
             document.getElementById('tituloCarpeta').innerText = `Resultados: "${texto}"`;
-            
-            let filtrados = inventario.filter(item => {
-                return item.pieza.toLowerCase().includes(texto) || item.numParte.toLowerCase().includes(texto);
-            });
-            dibujarTarjetas(filtrados);
+            dibujarTarjetas(inventario.filter(item => item.pieza.toLowerCase().includes(texto) || item.numParte.toLowerCase().includes(texto)));
         }
 
         function dibujarTarjetas(listaItems) {
             let divLista = document.getElementById('contenedorLista');
-            if(listaItems.length === 0) { divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; return; }
+            if(listaItems.length === 0) { divLista.innerHTML = "<p>No hay resultados.</p>"; return; }
 
-            let htmlTarjetas = "";
+            let html = "";
             listaItems.forEach((item) => {
-                let imgTag = item.foto ? `<img src="${item.foto}">` : `<span style="color:#ccc; font-size:10px;">SIN FOTO</span>`;
-                let claseAlerta = item.cantidad <= 3 ? 'border-left: 4px solid var(--rsb-red);' : '';
-                let mensajeAlerta = item.cantidad <= 3 ? `<span class="badge-danger">Stock Bajo</span>` : '';
+                let img = item.foto ? `<img src="${item.foto}">` : `<span style="color:#ccc; font-size:10px;">SIN FOTO</span>`;
+                let alerta = item.cantidad <= 3 ? 'border-left: 4px solid var(--rsb-red);' : '';
+                let badge = item.cantidad <= 3 ? `<span class="badge-danger">Stock Bajo</span>` : '';
                 
-                htmlTarjetas += `
-                    <div class="card" style="${claseAlerta}">
-                        <div class="card-header">
-                            <h4 class="card-title">${item.pieza}</h4>
-                            ${mensajeAlerta}
-                        </div>
+                html += `
+                    <div class="card" style="${alerta}">
+                        <div class="card-header"><h4 class="card-title">${item.pieza}</h4>${badge}</div>
                         <div class="card-body">
-                            <div class="card-photo">${imgTag}</div>
+                            <div class="card-photo">${img}</div>
                             <div class="card-info">
                                 <p><strong>No. Parte:</strong> ${item.numParte}</p>
                                 <p><strong>Fab:</strong> ${item.fab}</p>
-                                <p><strong>Sección:</strong> <span style="background:#e9ecef; padding:2px 6px; border-radius:4px;">${item.hoja}</span></p>
-                                <!-- BOTÓN QUE ABRE EL APARTADO EXCLUSIVO -->
-                                <button class="btn-qr" onclick="abrirVistaQR('${item.numParte}')">
-                                    📱 Ver Código QR
-                                </button>
+                                <button class="btn-qr" onclick="irAPestanaQR('${item.numParte}')">📱 Ir a crear QR</button>
                             </div>
                         </div>
                         <div class="stock-controls">
-                            <span class="stock-label">Stock Actual</span>
+                            <span class="stock-label">Stock</span>
                             <button class="btn-circle" onclick="editarStock('${item.numParte}', -1)">-</button>
                             <span class="stock-value">${item.cantidad}</span>
                             <button class="btn-circle" onclick="editarStock('${item.numParte}', 1)">+</button>
-                            <button onclick="borrarPieza('${item.numParte}')" style="background:none; border:none; color:var(--rsb-red); font-size:16px; cursor:pointer;" title="Eliminar pieza">🗑️</button>
+                            <button onclick="borrarPieza('${item.numParte}')" style="background:none; border:none; color:var(--rsb-red); font-size:16px; cursor:pointer;">🗑️</button>
                         </div>
                     </div>`;
             });
-
-            divLista.innerHTML = htmlTarjetas;
+            divLista.innerHTML = html;
         }
 
         // ==========================================
-        // NUEVO SISTEMA: APARTADO EXCLUSIVO DE QR
+        // FUNCIONAMIENTO DE LA PESTAÑA QR
         // ==========================================
-        function abrirVistaQR(numParte) {
+        
+        function irAPestanaQR(numParte) {
+            cambiarTab('qr');
+            document.getElementById('selectPiezaQR').value = numParte;
+            generarQRDesdeSelect();
+        }
+
+        function generarQRDesdeSelect() {
+            let numParte = document.getElementById('selectPiezaQR').value;
+            let area = document.getElementById('areaQRGenerado');
+            
+            if(!numParte) {
+                area.style.display = 'none';
+                return;
+            }
+
             let item = inventario.find(i => i.numParte === numParte);
             if(!item) return;
 
-            // Esconder la lista y mostrar la vista de QR
-            document.getElementById('vistaPrincipalInventario').style.display = 'none';
-            document.getElementById('vistaQR').style.display = 'block';
-
-            // Llenar datos de texto
-            document.getElementById('qrNombrePiezaTexto').innerText = item.pieza;
-            document.getElementById('qrNumParteTexto').innerText = "ID: " + item.numParte;
-
-            // Limpiar y generar QR en el contenedor limpio
-            let contenedor = document.getElementById('qrCanvasLimpio');
-            contenedor.innerHTML = "";
+            document.getElementById('textoQRPieza').innerText = item.pieza;
+            document.getElementById('textoQRNum').innerText = `ID: ${item.numParte}`;
+            
+            let contenedor = document.getElementById('lienzoQR');
+            contenedor.innerHTML = ""; // Limpiamos canvas
+            
             let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
 
+            // Como la pestaña ya está visible, la librería detectará el tamaño perfecto.
             new QRCode(contenedor, {
                 text: textoQR,
-                width: 220,
-                height: 220,
+                width: 200,
+                height: 200,
                 correctLevel: QRCode.CorrectLevel.M
             });
 
-            // Configurar botón descargar
-            document.getElementById('btnDescargarEtiqueta').onclick = function() {
-                let canvas = document.querySelector('#qrCanvasLimpio canvas');
-                if(!canvas) return;
-                let m = 20; let nC = document.createElement('canvas');
-                nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
-                let ctx = nC.getContext('2d');
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
-                let link = document.createElement('a'); link.download = 'QR_RSB_' + numParte + '.png'; link.href = nC.toDataURL('image/png'); link.click();
-            };
+            area.style.display = 'block';
         }
 
-        function cerrarVistaQR() {
-            // Esconder la vista QR y mostrar la lista de nuevo
-            document.getElementById('vistaQR').style.display = 'none';
-            document.getElementById('vistaPrincipalInventario').style.display = 'block';
+        function descargarEtiquetaPestana() {
+            let canvas = document.querySelector('#lienzoQR canvas');
+            if(!canvas) return;
+            let m = 20; let nC = document.createElement('canvas');
+            nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
+            let ctx = nC.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
+            let numParte = document.getElementById('selectPiezaQR').value;
+            let link = document.createElement('a'); link.download = 'QR_RSB_' + numParte + '.png'; link.href = nC.toDataURL('image/png'); link.click();
         }
 
         // ==========================================
-        // RESTO DE FUNCIONES
-        // ==========================================
-        function editarStock(numParte, cambio) {
-            let indice = inventario.findIndex(item => item.numParte === numParte);
-            if(indice >= 0) {
-                let nuevaCantidad = inventario[indice].cantidad + cambio;
-                if(nuevaCantidad < 0) nuevaCantidad = 0; 
-                db.ref('inventario/' + numParte).update({ cantidad: nuevaCantidad });
+        function editarStock(n, c) {
+            let i = inventario.findIndex(item => item.numParte === n);
+            if(i >= 0) {
+                let nv = inventario[i].cantidad + c;
+                db.ref('inventario/' + n).update({ cantidad: nv < 0 ? 0 : nv });
             }
         }
 
-        function borrarPieza(numParte) {
-            if(confirm("¿Seguro que deseas eliminar esta refacción por completo?")) {
-                db.ref('inventario/' + numParte).remove();
-            }
-        }
+        function borrarPieza(n) { if(confirm("¿Eliminar?")) db.ref('inventario/' + n).remove(); }
 
         function iniciarEscaner() {
             document.getElementById('resultadoEscaneo').style.display = 'none';
-            if(escanerActivado) { escanerActivado.clear(); }
+            if(escanerActivado) escanerActivado.clear();
             escanerActivado = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
             escanerActivado.render(onScanSuccess);
         }
 
         function detenerEscaner() { if(escanerActivado) { escanerActivado.clear(); escanerActivado = null; } }
 
-        function onScanSuccess(textoQR) {
+        function onScanSuccess(t) {
             detenerEscaner();
-            let resDiv = document.getElementById('resultadoEscaneo');
-            resDiv.style.display = 'block';
-            
-            if(textoQR.includes("No. Parte:")) {
-                resDiv.style.borderLeftColor = "var(--rsb-blue)"; 
-                resDiv.innerHTML = `<strong style="color:var(--rsb-blue);">Datos de la Refacción Leída:</strong><br><br>${textoQR}`;
-            } else {
-                resDiv.style.borderLeftColor = "#ffc107";
-                resDiv.innerHTML = `<strong>⚠️ Código No Reconocido:</strong><br>${textoQR}`;
-            }
+            let res = document.getElementById('resultadoEscaneo');
+            res.style.display = 'block';
+            if(t.includes("No. Parte:")) { res.style.borderLeftColor = "var(--rsb-blue)"; res.innerHTML = `<strong>Pieza Leída:</strong><br><br>${t}`; }
+            else { res.style.borderLeftColor = "#ffc107"; res.innerHTML = `<strong>⚠️ Código ajeno:</strong><br>${t}`; }
         }
     </script>
 </body>
