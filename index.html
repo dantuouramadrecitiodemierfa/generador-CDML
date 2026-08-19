@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS | RSB Transmissions (V20)</title>
     <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.4.4/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     
     <!-- LIBRERÍAS DE LA NUBE FIREBASE -->
@@ -183,7 +183,7 @@
     <script>
         console.log("=================================");
         console.log("WMS RSB V20 - INICIANDO");
-        console.log("QRCode:", typeof QRCode, "toCanvas:", typeof QRCode !== "undefined" ? typeof QRCode.toCanvas : "undefined");
+        console.log("QRCode:", typeof QRCode);
         console.log("Firebase:", typeof firebase);
         console.log("=================================");
 
@@ -296,7 +296,7 @@
         // ==========================================
         // GUARDAR Y GENERAR QR EN LA MISMA PESTAÑA
         // ==========================================
-        async function guardarRegistro() {
+        function guardarRegistro() {
             let h = document.getElementById('hoja').value.trim() || "General";
             let p = document.getElementById('pieza').value.trim();
             let f = document.getElementById('fab').value.trim();
@@ -308,9 +308,9 @@
                 return;
             }
 
-            if (typeof QRCode === "undefined" || typeof QRCode.toCanvas !== "function") {
+            if (typeof QRCode === "undefined") {
                 alert("ERROR: La librería QR no se cargó correctamente.\n\nActualiza la página e inténtalo de nuevo.");
-                console.error("QRCode.toCanvas no está disponible.");
+                console.error("QRCode no está disponible.");
                 return;
             }
 
@@ -336,52 +336,54 @@
 
             try {
                 if (!db) throw new Error('Firebase no está disponible.');
-                await db.ref('inventario/' + n).set(nuevaPieza);
+                db.ref('inventario/' + n).set(nuevaPieza, (error) => {
+                    if (error) {
+                        console.error("Error:", error);
+                        alert("No se pudo completar la operación.\n\n" + error.message);
+                        btn.innerText = "Guardar en Base de Datos";
+                        btn.disabled = false;
+                    } else {
+                        btn.innerText = "Guardar en Base de Datos";
+                        btn.disabled = false;
 
-                btn.innerText = "Guardar en Base de Datos";
-                btn.disabled = false;
+                        numParteRecienCreado = n;
 
-                numParteRecienCreado = n;
+                        document.getElementById('textoPiezaNuevo').innerText = p;
+                        document.getElementById('textoNumNuevo').innerText = `ID: ${n}`;
 
-                document.getElementById('textoPiezaNuevo').innerText = p;
-                document.getElementById('textoNumNuevo').innerText = `ID: ${n}`;
+                        const areaNuevo = document.getElementById('areaQRNuevo');
+                        areaNuevo.style.display = 'block';
 
-                const areaNuevo = document.getElementById('areaQRNuevo');
-                areaNuevo.style.display = 'block';
+                        const contenedor = document.getElementById('lienzoQRNuevo');
+                        contenedor.innerHTML = "";
 
-                const contenedor = document.getElementById('lienzoQRNuevo');
-                contenedor.innerHTML = "";
+                        const textoQR =
+                            `Sección: ${h}\n` +
+                            `Pieza: ${p}\n` +
+                            `No. Parte: ${n}\n` +
+                            `Fab: ${f}`;
 
-                const textoQR =
-                    `Sección: ${h}\n` +
-                    `Pieza: ${p}\n` +
-                    `No. Parte: ${n}\n` +
-                    `Fab: ${f}`;
+                        // Generar QR usando qrcode.js
+                        let qrCode = new QRCode(contenedor, {
+                            text: textoQR,
+                            width: 200,
+                            height: 200,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
 
-                const canvas = document.createElement('canvas');
-                canvas.width = 220;
-                canvas.height = 220;
-                contenedor.appendChild(canvas);
+                        console.log("QR nuevo generado correctamente.");
 
-                await QRCode.toCanvas(canvas, textoQR, {
-                    width: 200,
-                    margin: 2,
-                    errorCorrectionLevel: 'M',
-                    color: {
-                        dark: '#000000',
-                        light: '#ffffff'
+                        document.getElementById('pieza').value = "";
+                        document.getElementById('num').value = "";
+                        document.getElementById('cant').value = "";
+
+                        fotoBase64 = "";
+                        document.getElementById('previewFoto').style.display = 'none';
+                        document.getElementById('fotoInput').value = "";
                     }
                 });
-
-                console.log("QR nuevo generado correctamente.");
-
-                document.getElementById('pieza').value = "";
-                document.getElementById('num').value = "";
-                document.getElementById('cant').value = "";
-
-                fotoBase64 = "";
-                document.getElementById('previewFoto').style.display = 'none';
-                document.getElementById('fotoInput').value = "";
 
             } catch (error) {
                 console.error("Error:", error);
@@ -393,9 +395,9 @@
         }
 
         function descargarQRNuevo() {
-            const canvas = document.querySelector('#lienzoQRNuevo canvas');
+            const qrCanvas = document.querySelector('#lienzoQRNuevo canvas');
 
-            if (!canvas) {
+            if (!qrCanvas) {
                 alert("No hay un código QR para descargar.");
                 return;
             }
@@ -403,13 +405,13 @@
             const m = 20;
             const nC = document.createElement('canvas');
 
-            nC.width = canvas.width + (m * 2);
-            nC.height = canvas.height + (m * 2);
+            nC.width = qrCanvas.width + (m * 2);
+            nC.height = qrCanvas.height + (m * 2);
 
             const ctx = nC.getContext('2d');
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, nC.width, nC.height);
-            ctx.drawImage(canvas, m, m);
+            ctx.drawImage(qrCanvas, m, m);
 
             const link = document.createElement('a');
             link.download = 'QR_RSB_' + numParteRecienCreado + '.png';
@@ -422,7 +424,7 @@
         // ==========================================
         // PESTAÑA EXCLUSIVA DE ETIQUETAS (ARCHIVO)
         // ==========================================
-        async function generarQRDesdeSelect() {
+        function generarQRDesdeSelect() {
 
             const numParte = document.getElementById('selectPiezaQR').value;
             const area = document.getElementById('areaQRGenerado');
@@ -441,7 +443,7 @@
                 return;
             }
 
-            if (typeof QRCode === "undefined" || typeof QRCode.toCanvas !== "function") {
+            if (typeof QRCode === "undefined") {
                 area.style.display = 'block';
                 contenedor.innerHTML =
                     '<p style="color:red;font-weight:bold;">' +
@@ -465,19 +467,14 @@
                 `Fab: ${item.fab}`;
 
             try {
-                const canvas = document.createElement('canvas');
-                canvas.width = 220;
-                canvas.height = 220;
-                contenedor.appendChild(canvas);
-
-                await QRCode.toCanvas(canvas, textoQR, {
+                // Generar QR usando qrcode.js
+                let qrCode = new QRCode(contenedor, {
+                    text: textoQR,
                     width: 200,
-                    margin: 2,
-                    errorCorrectionLevel: 'M',
-                    color: {
-                        dark: '#000000',
-                        light: '#ffffff'
-                    }
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
                 });
 
                 console.log("QR de ETIQUETAS generado correctamente.");
@@ -494,9 +491,9 @@
         }
 
         function descargarEtiquetaPestana() {
-            const canvas = document.querySelector('#lienzoQR canvas');
+            const qrCanvas = document.querySelector('#lienzoQR canvas');
 
-            if (!canvas) {
+            if (!qrCanvas) {
                 alert("No hay un código QR para descargar.");
                 return;
             }
@@ -504,13 +501,13 @@
             const m = 20;
             const nC = document.createElement('canvas');
 
-            nC.width = canvas.width + (m * 2);
-            nC.height = canvas.height + (m * 2);
+            nC.width = qrCanvas.width + (m * 2);
+            nC.height = qrCanvas.height + (m * 2);
 
             const ctx = nC.getContext('2d');
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, nC.width, nC.height);
-            ctx.drawImage(canvas, m, m);
+            ctx.drawImage(qrCanvas, m, m);
 
             const numParte = document.getElementById('selectPiezaQR').value;
 
