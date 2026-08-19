@@ -3,54 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario RSB</title>
+    <title>Inventario RSB Pro V2</title>
     <link rel="manifest" href="manifest.json">
-    <!-- Librería para Generar QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Librería para Escanear QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 10px; margin: 0; }
-        .box { background: white; padding: 20px; border-radius: 10px; margin: 10px auto; width: 90%; max-width: 350px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        .box { background: white; padding: 20px; border-radius: 10px; margin: 10px auto; width: 90%; max-width: 400px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 15px;}
         button { background: #0056b3; color: white; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        button.btn-lista { background: #17a2b8; padding: 8px; font-size: 14px; margin-top: 5px; margin-right: 5px; width: auto;}
         
-        /* Estilos de las pestañas */
-        .tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
-        .tabs button { margin: 0; background: #888; padding: 12px; }
+        .tabs { display: flex; gap: 5px; justify-content: center; margin-bottom: 15px; }
+        .tabs button { margin: 0; background: #888; padding: 10px; font-size: 14px;}
         .tabs button.activo { background: #0056b3; }
         
         #qrcode { margin-top: 20px; display: flex; justify-content: center; }
         #btnDescargar { margin-top: 15px; background: #28a745; display: none; }
         
-        /* Estilos del escáner */
-        #seccionEscanear { display: none; }
+        .seccion { display: none; }
+        .seccion.activa { display: block; }
+        
+        /* Estilos de Lista y Fotos */
+        .item-lista { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; box-shadow: 0px 2px 5px rgba(0,0,0,0.05);}
+        .item-lista h4 { margin: 0 0 5px 0; color: #0056b3; font-size: 18px;}
+        .item-lista p { margin: 3px 0; font-size: 14px; color: #444; }
+        .foto-pieza { width: 100%; max-height: 200px; object-fit: contain; background: #eee; border-radius: 5px; margin-bottom: 10px; display: none; }
+        
         #reader { width: 100%; margin-top: 15px; border-radius: 5px; overflow: hidden;}
-        #resultadoEscaneo { margin-top: 15px; padding: 15px; background: #e2f0d9; border-left: 5px solid #28a745; border-radius: 5px; text-align: left; white-space: pre-line; font-size: 16px; display: none;}
+        #resultadoEscaneo { margin-top: 15px; padding: 15px; background: #e2f0d9; border-left: 5px solid #28a745; border-radius: 5px; text-align: left; font-size: 16px; display: none;}
+        
+        .file-input-wrapper { background: #e9ecef; padding: 10px; border-radius: 5px; margin: 8px 0; border: 1px dashed #ccc;}
+        .file-input-wrapper input { padding: 0; border: none; background: transparent; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>Inventario RSB</h2>
+        <h2>📦 RSB Inventario</h2>
         
+        <!-- PESTAÑAS -->
         <div class="tabs">
-            <button id="btnGen" class="activo" onclick="cambiarTab('generar')">Generar QR</button>
-            <button id="btnEsc" onclick="cambiarTab('escanear')">Escanear QR</button>
+            <button id="btnNuevo" class="activo" onclick="cambiarTab('nuevo')">➕ Nuevo</button>
+            <button id="btnLista" onclick="cambiarTab('lista')">📋 Lista</button>
+            <button id="btnEsc" onclick="cambiarTab('escanear')">📷 Escanear</button>
         </div>
 
-        <!-- SECCIÓN GENERAR -->
-        <div id="seccionGenerar">
+        <!-- 1. REGISTRAR NUEVO -->
+        <div id="secNuevo" class="seccion activa">
             <input type="text" id="pieza" placeholder="Nombre de la Pieza">
-            <input type="text" id="fabricante" placeholder="Fabricante">
-            <input type="text" id="numParte" placeholder="No. de Parte">
-            <button onclick="generar()">Generar QR</button>
+            <input type="text" id="fab" placeholder="Fabricante">
+            <input type="text" id="num" placeholder="No. de Parte (Único)">
+            <input type="number" id="cant" placeholder="Cantidad en stock">
+            
+            <div class="file-input-wrapper">
+                <label style="font-size: 14px; color: #555; display:block; margin-bottom:5px;"><strong>📸 Foto de la refacción:</strong></label>
+                <input type="file" id="fotoInput" accept="image/*" capture="environment">
+                <img id="previewFoto" class="foto-pieza" style="margin-top: 10px;">
+            </div>
+
+            <button onclick="guardarYGenerar()">Guardar en BD y Generar QR</button>
             <div id="qrcode"></div>
-            <button id="btnDescargar" onclick="descargar()">Descargar Imagen</button>
+            <button id="btnDescargar" onclick="descargar()">Descargar Etiqueta</button>
         </div>
 
-        <!-- SECCIÓN ESCANEAR -->
-        <div id="seccionEscanear">
-            <p style="color:#555; font-weight:bold;">Apunta la cámara al código QR</p>
+        <!-- 2. LISTA DE INVENTARIO -->
+        <div id="secLista" class="seccion">
+            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o No. Parte..." onkeyup="filtrarLista()">
+            <div id="contenedorLista" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- 3. ESCÁNER -->
+        <div id="secEscanear" class="seccion">
+            <p style="color:#555; font-weight:bold;">Apunta al QR de la refacción</p>
             <div id="reader"></div>
             <div id="resultadoEscaneo"></div>
         </div>
@@ -58,66 +82,181 @@
 
     <script>
         let escanerActivado = null;
+        let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V2')) || [];
+        let fotoBase64 = "";
+
+        // Comprimir imagen al seleccionarla
+        document.getElementById('fotoInput').addEventListener('change', function(e) {
+            let file = e.target.files[0];
+            if(!file) return;
+            
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                let img = new Image();
+                img.onload = function() {
+                    let canvas = document.createElement('canvas');
+                    let ctx = canvas.getContext('2d');
+                    
+                    // Comprimir a max 400px de ancho para no saturar memoria
+                    let MAX_WIDTH = 400;
+                    let scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.6); // 60% calidad
+                    
+                    let preview = document.getElementById('previewFoto');
+                    preview.src = fotoBase64;
+                    preview.style.display = 'block';
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
 
         function cambiarTab(tab) {
-            document.getElementById('seccionGenerar').style.display = tab === 'generar' ? 'block' : 'none';
-            document.getElementById('seccionEscanear').style.display = tab === 'escanear' ? 'block' : 'none';
-            document.getElementById('btnGen').classList.toggle('activo', tab === 'generar');
-            document.getElementById('btnEsc').classList.toggle('activo', tab === 'escanear');
-
-            if(tab === 'escanear') {
-                iniciarEscaner();
-            } else {
-                detenerEscaner();
-            }
+            document.querySelectorAll('.seccion').forEach(el => el.classList.remove('activa'));
+            document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('activo'));
+            
+            if(tab === 'nuevo') { document.getElementById('secNuevo').classList.add('activa'); document.getElementById('btnNuevo').classList.add('activo'); detenerEscaner(); }
+            if(tab === 'lista') { document.getElementById('secLista').classList.add('activa'); document.getElementById('btnLista').classList.add('activo'); cargarLista(); detenerEscaner(); }
+            if(tab === 'escanear') { document.getElementById('secEscanear').classList.add('activa'); document.getElementById('btnEsc').classList.add('activo'); iniciarEscaner(); }
         }
 
-        // --- CÓDIGO GENERADOR ---
-        function generar() {
+        // GUARDAR DATOS Y CREAR QR
+        function guardarYGenerar() {
             let p = document.getElementById('pieza').value;
-            let f = document.getElementById('fabricante').value;
-            let n = document.getElementById('numParte').value;
-            if(!p || !f || !n){ alert("Llena todos los campos."); return; }
+            let f = document.getElementById('fab').value;
+            let n = document.getElementById('num').value.trim();
+            let c = document.getElementById('cant').value;
+
+            if(!p || !f || !n || !c){ alert("Llena todos los campos de texto, compa."); return; }
+
+            let indice = inventario.findIndex(item => item.numParte === n);
+            let nuevaPieza = { pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoBase64 };
+            
+            if(indice >= 0) {
+                // Si ya existe y no se tomó foto nueva, conservar la vieja
+                if(!fotoBase64) nuevaPieza.foto = inventario[indice].foto;
+                inventario[indice] = nuevaPieza;
+            } else {
+                inventario.push(nuevaPieza);
+            }
+            
+            try {
+                localStorage.setItem('inventarioRSB_V2', JSON.stringify(inventario));
+            } catch (e) {
+                alert("¡Memoria llena! Borra algunas piezas viejas para guardar nuevas fotos.");
+                return;
+            }
+
             let qrDiv = document.getElementById('qrcode');
             qrDiv.innerHTML = "";
-            new QRCode(qrDiv, { text: `Pieza: ${p}\nFab: ${f}\nNo. Parte: ${n}`, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
+            new QRCode(qrDiv, { text: n, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
             document.getElementById('btnDescargar').style.display = 'block';
+            
+            alert("¡Pieza registrada!");
+            // Limpiar foto
+            fotoBase64 = "";
+            document.getElementById('previewFoto').style.display = 'none';
+            document.getElementById('fotoInput').value = "";
+        }
+
+        // MOSTRAR Y BUSCAR EN LA BASE DE DATOS
+        function cargarLista(filtro = "") {
+            let divLista = document.getElementById('contenedorLista');
+            divLista.innerHTML = "";
+            
+            let filtrados = inventario;
+            if(filtro) {
+                let txt = filtro.toLowerCase();
+                filtrados = inventario.filter(item => 
+                    item.pieza.toLowerCase().includes(txt) || 
+                    item.numParte.toLowerCase().includes(txt)
+                );
+            }
+
+            if(filtrados.length === 0) {
+                divLista.innerHTML = "<p>No se encontraron piezas.</p>";
+                return;
+            }
+
+            filtrados.forEach(item => {
+                let imgTag = item.foto ? `<img src="${item.foto}" class="foto-pieza" style="display:block;">` : '';
+                divLista.innerHTML += `
+                    <div class="item-lista">
+                        ${imgTag}
+                        <h4>${item.pieza}</h4>
+                        <p><strong>Fab:</strong> ${item.fab}</p>
+                        <p><strong>No. Parte:</strong> ${item.numParte}</p>
+                        <p><strong>Stock:</strong> <span style="color:#28a745; font-weight:bold;">${item.cantidad} unidades</span></p>
+                        <button class="btn-lista" style="background:#dc3545;" onclick="borrarPieza('${item.numParte}')">Borrar</button>
+                    </div>
+                `;
+            });
+        }
+
+        function filtrarLista() {
+            let texto = document.getElementById('buscador').value;
+            cargarLista(texto);
+        }
+
+        function borrarPieza(numParte) {
+            if(confirm("¿Seguro que quieres borrar esta pieza?")) {
+                inventario = inventario.filter(item => item.numParte !== numParte);
+                localStorage.setItem('inventarioRSB_V2', JSON.stringify(inventario));
+                cargarLista(); 
+            }
         }
 
         function descargar() {
             let canvas = document.querySelector('#qrcode canvas');
-            let m = 40;
-            let nC = document.createElement('canvas');
-            nC.width = canvas.width + (m * 2); nC.height = canvas.height + (m * 2);
+            let m = 20; let nC = document.createElement('canvas');
+            nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
             let ctx = nC.getContext('2d');
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, nC.width, nC.height);
-            ctx.drawImage(canvas, m, m);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
             let link = document.createElement('a');
-            link.download = 'QR_RSB.png'; link.href = nC.toDataURL('image/png'); link.click();
+            link.download = 'QR_RSB_' + document.getElementById('num').value + '.png'; 
+            link.href = nC.toDataURL('image/png'); link.click();
         }
 
-        // --- CÓDIGO ESCÁNER ---
+        // ESCÁNER
         function iniciarEscaner() {
             document.getElementById('resultadoEscaneo').style.display = 'none';
-            
             if(escanerActivado) { escanerActivado.clear(); }
-
             escanerActivado = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
             escanerActivado.render(onScanSuccess);
         }
 
         function detenerEscaner() {
-            if(escanerActivado) { 
-                escanerActivado.clear(); 
-                escanerActivado = null;
-            }
+            if(escanerActivado) { escanerActivado.clear(); escanerActivado = null; }
         }
 
-        function onScanSuccess(textoDecodificado) {
+        function onScanSuccess(textoQR) {
+            detenerEscaner();
             let resDiv = document.getElementById('resultadoEscaneo');
             resDiv.style.display = 'block';
-            resDiv.innerHTML = "<strong>✅ Información de la pieza:</strong><br><br>" + textoDecodificado;
-            detenerEscaner(); // Apaga la cámara al detectar
+            
+            let item = inventario.find(i => i.numParte === textoQR);
+            
+            if(item) {
+                let imgTag = item.foto ? `<img src="${item.foto}" class="foto-pieza" style="display:block;">` : '';
+                resDiv.style.borderLeftColor = "#28a745";
+                resDiv.style.backgroundColor = "#e2f0d9";
+                resDiv.innerHTML = `
+                    <strong>✅ ¡Pieza Encontrada!</strong><br><br>
+                    ${imgTag}
+                    <strong>Nombre:</strong> ${item.pieza}<br>
+                    <strong>Fabricante:</strong> ${item.fab}<br>
+                    <strong>No. Parte:</strong> ${item.numParte}<br>
+                    <strong>Stock en Almacén:</strong> <span style="font-size:22px; font-weight:bold; color:#0056b3;">${item.cantidad}</span>
+                `;
+            } else {
+                resDiv.style.borderLeftColor = "#dc3545";
+                resDiv.style.backgroundColor = "#f8d7da";
+                resDiv.innerHTML = `<strong>❌ Pieza no encontrada</strong><br><br>El código leído fue: ${textoQR}<br>No está registrada en el sistema.`;
+            }
         }
     </script>
 </body>
