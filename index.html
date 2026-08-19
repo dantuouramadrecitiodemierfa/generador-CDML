@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS | RSB Transmissions (Cloud)</title>
     <link rel="manifest" href="manifest.json">
-    <!-- LIBRERÍAS DE CÓDIGO QR Y CÁMARA -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     
@@ -88,73 +87,59 @@
     </div>
 
     <div class="container">
-        <!-- PESTAÑAS -->
         <div class="tabs">
             <button id="btnNuevo" class="activo" onclick="cambiarTab('nuevo')">ALTA REFACCIÓN</button>
             <button id="btnLista" onclick="cambiarTab('lista')">INVENTARIO</button>
             <button id="btnEsc" onclick="cambiarTab('escanear')">ESCÁNER</button>
         </div>
 
-        <!-- 1. ALTA DE REFACCIÓN -->
         <div id="secNuevo" class="seccion activa">
             <div class="input-group">
                 <label>Sección / Área</label>
                 <input type="text" id="hoja" list="hojasGuardadas" placeholder="Ej. Eléctrico, Neumática...">
                 <datalist id="hojasGuardadas"></datalist>
             </div>
-            
             <div class="input-group">
                 <label>Nombre de la Pieza</label>
                 <input type="text" id="pieza" placeholder="Descripción de la refacción">
             </div>
-            
             <div class="input-group">
                 <label>Fabricante</label>
                 <input type="text" id="fab" placeholder="Marca o proveedor">
             </div>
-            
             <div class="input-group">
                 <label>Número de Parte (ID Único)</label>
                 <input type="text" id="num" placeholder="Ingresar código numérico">
             </div>
-            
             <div class="input-group">
                 <label>Cantidad Inicial (Stock)</label>
                 <input type="number" id="cant" placeholder="0">
             </div>
-            
             <div class="input-group file-upload">
                 <label style="margin-bottom: 10px;">Fotografía de la Pieza</label>
                 <input type="file" id="fotoInput" accept="image/*" capture="environment">
                 <img id="previewFoto">
             </div>
-
             <button class="btn-primary" onclick="guardarRegistro()" id="btnGuardar">Guardar en Base de Datos</button>
         </div>
 
-        <!-- 2. INVENTARIO -->
         <div id="secLista" class="seccion">
-            
             <div class="input-group" style="margin-bottom: 20px;">
                 <input type="text" id="buscadorGlobal" placeholder="🔍 Buscar nombre o No. Parte en todo el almacén..." onkeyup="ejecutarBusquedaGlobal()">
             </div>
-
             <div id="vistaCarpetas">
                 <h3 style="color: var(--text); font-size: 16px; text-align: left; margin-bottom: 15px;">Áreas de Almacén</h3>
                 <div id="contenedorCarpetas"></div>
             </div>
-
             <div id="vistaItems" style="display:none;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
                     <button onclick="volverCarpetas()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver</button>
                     <h3 id="tituloCarpeta" style="margin:0; color: var(--rsb-blue); font-size: 16px;"></h3>
                 </div>
-                
                 <div id="contenedorLista"></div>
             </div>
         </div>
 
-        <!-- 3. ESCÁNER -->
         <div id="secEscanear" class="seccion">
             <p style="color:var(--text-muted); font-size:14px;">Enfoque el código QR de la refacción dentro del recuadro.</p>
             <div id="reader"></div>
@@ -164,11 +149,12 @@
 
     <script>
         // ==========================================
-        // ☁️ CONFIGURACIÓN FIREBASE (LA NUBE)
+        // ☁️ CONFIGURACIÓN FIREBASE (LA NUBE CON URL)
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDY9r31hs26gt_63myKdkLMsCre8dm33g0",
             authDomain: "inventario-rsb.firebaseapp.com",
+            databaseURL: "https://inventario-rsb-default-rtdb.firebaseio.com",
             projectId: "inventario-rsb",
             storageBucket: "inventario-rsb.firebasestorage.app",
             messagingSenderId: "550282196380",
@@ -185,26 +171,21 @@
         let modoVista = 'carpetas';
         let carpetaActual = "";
 
-        // ESCUCHADOR EN TIEMPO REAL: Se activa cada vez que alguien, en cualquier cel, cambia algo
+        // ESCUCHADOR EN TIEMPO REAL
         db.ref('inventario').on('value', (snapshot) => {
             const data = snapshot.val();
             inventario = [];
             if(data) {
-                // Convertimos el diccionario de Firebase a un arreglo para poder filtrarlo
-                for(let key in data) {
-                    inventario.push(data[key]);
-                }
+                for(let key in data) { inventario.push(data[key]); }
             }
             
             actualizarDatalistHojas();
             
-            // Actualizar la pantalla instantáneamente sin que el usuario haga nada
             if(modoVista === 'carpetas') volverCarpetas();
             else if(modoVista === 'carpetaDetalle') abrirCarpeta(carpetaActual);
             else if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
         });
 
-        // Procesar Fotografía
         document.getElementById('fotoInput').addEventListener('change', function(e) {
             let file = e.target.files[0];
             if(!file) return;
@@ -217,7 +198,7 @@
                     let scaleSize = 400 / img.width;
                     canvas.width = 400; canvas.height = img.height * scaleSize;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.6); // Exprimido al 60% para que suba rápido
+                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.6); 
                     document.getElementById('previewFoto').src = fotoBase64;
                     document.getElementById('previewFoto').style.display = 'block';
                 }
@@ -263,21 +244,15 @@
 
             if(!p || !f || !n || isNaN(c)){ alert("Por favor, complete todos los campos requeridos."); return; }
 
-            // Cambiar texto de botón para avisar que está subiendo a la nube
             document.getElementById('btnGuardar').innerText = "Subiendo a la nube ☁️...";
 
-            // Buscar si ya existe la pieza para no borrar su foto si no subimos una nueva
             let indice = inventario.findIndex(item => item.numParte === n);
             let fotoFinal = fotoBase64;
-            if(indice >= 0 && !fotoBase64) {
-                fotoFinal = inventario[indice].foto || "";
-            }
+            if(indice >= 0 && !fotoBase64) { fotoFinal = inventario[indice].foto || ""; }
 
             let nuevaPieza = { hoja: h, pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoFinal };
             
-            // GUARDAR EN FIREBASE (Se guarda bajo el Número de Parte)
             db.ref('inventario/' + n).set(nuevaPieza).then(() => {
-                // Limpiar formulario al terminar
                 document.getElementById('pieza').value = "";
                 document.getElementById('num').value = "";
                 document.getElementById('cant').value = "";
@@ -289,7 +264,7 @@
                 alert("¡Registro guardado en la Nube!");
                 cambiarTab('lista'); 
             }).catch((error) => {
-                alert("Error al guardar: Asegúrate de haber habilitado la base de datos en Modo de Prueba.");
+                alert("Error al guardar. Revisa tu conexión a internet.");
                 document.getElementById('btnGuardar').innerText = "Guardar en Base de Datos";
             });
         }
@@ -401,13 +376,11 @@
             });
         }
 
-        // --- ACCIONES A LA NUBE ---
         function editarStock(numParte, cambio) {
             let indice = inventario.findIndex(item => item.numParte === numParte);
             if(indice >= 0) {
                 let nuevaCantidad = inventario[indice].cantidad + cambio;
                 if(nuevaCantidad < 0) nuevaCantidad = 0; 
-                // Mandamos la orden a la nube de actualizar SOLO la cantidad
                 db.ref('inventario/' + numParte).update({ cantidad: nuevaCantidad });
             }
         }
