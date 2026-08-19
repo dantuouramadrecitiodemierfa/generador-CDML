@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS | RSB Transmissions (V14)</title>
+    <title>WMS | RSB Transmissions (V15)</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
@@ -75,12 +75,11 @@
         #previewFoto { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; border-radius: 6px; }
         #reader { width: 100%; margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);}
         #resultadoEscaneo { margin-top: 15px; padding: 15px; background: #f8fafe; border-left: 4px solid var(--rsb-blue); border-radius: 4px; text-align: left; font-size: 14px; display: none; white-space: pre-wrap;}
-
-        /* ESTILOS DE LA VENTANA EMERGENTE (MODAL) */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; backdrop-filter: blur(3px);}
-        .modal-content { background-color: white; padding: 25px; border-radius: 12px; width: 85%; max-width: 300px; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5);}
-        .close-btn { position: absolute; right: 15px; top: 10px; font-size: 28px; font-weight: bold; color: #888; cursor: pointer; border: none; background: none;}
-        #qrModalCanvas { margin: 20px auto; display: flex; justify-content: center; background: white; padding: 15px; border-radius: 8px; border: 2px dashed var(--border);}
+        
+        /* ESTILOS DEL NUEVO APARTADO DE QR */
+        #vistaQR { text-align: center; padding-top: 10px; }
+        .qr-card-display { background: white; padding: 30px 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: inline-block; width: 100%; box-sizing: border-box;}
+        #qrCanvasLimpio { margin: 0 auto; display: flex; justify-content: center; }
     </style>
 </head>
 <body>
@@ -88,7 +87,7 @@
     <div class="header">
         <img src="logo.png" alt="RSB Transmissions" onerror="this.style.display='none'">
         <h1>Sistema de Control WMS</h1>
-        <div class="cloud-badge">☁️ Conectado a la Nube (V14)</div>
+        <div class="cloud-badge">☁️ Conectado a la Nube (V15)</div>
     </div>
 
     <div class="container">
@@ -129,41 +128,49 @@
         </div>
 
         <div id="secLista" class="seccion">
-            <div class="input-group" style="margin-bottom: 20px;">
-                <input type="text" id="buscadorGlobal" placeholder="🔍 Buscar nombre o No. Parte en todo el almacén..." onkeyup="ejecutarBusquedaGlobal()">
-            </div>
-            <div id="vistaCarpetas">
-                <h3 style="color: var(--text); font-size: 16px; text-align: left; margin-bottom: 15px;">Áreas de Almacén</h3>
-                <div id="contenedorCarpetas"></div>
-            </div>
-            <div id="vistaItems" style="display:none;">
-                <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
-                    <button onclick="volverCarpetas()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver</button>
-                    <h3 id="tituloCarpeta" style="margin:0; color: var(--rsb-blue); font-size: 16px;"></h3>
+            <!-- VISTA DE BUSCADOR Y CARPETAS -->
+            <div id="vistaPrincipalInventario">
+                <div class="input-group" style="margin-bottom: 20px;">
+                    <input type="text" id="buscadorGlobal" placeholder="🔍 Buscar nombre o No. Parte..." onkeyup="ejecutarBusquedaGlobal()">
                 </div>
-                <div id="contenedorLista"></div>
+                
+                <div id="vistaCarpetas">
+                    <h3 style="color: var(--text); font-size: 16px; text-align: left; margin-bottom: 15px;">Áreas de Almacén</h3>
+                    <div id="contenedorCarpetas"></div>
+                </div>
+                
+                <div id="vistaItems" style="display:none;">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
+                        <button onclick="volverCarpetas()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver a Carpetas</button>
+                        <h3 id="tituloCarpeta" style="margin:0; color: var(--rsb-blue); font-size: 16px;"></h3>
+                    </div>
+                    <div id="contenedorLista"></div>
+                </div>
             </div>
+
+            <!-- APARTADO EXCLUSIVO PARA VER EL QR -->
+            <div id="vistaQR" style="display: none;">
+                <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
+                    <button onclick="cerrarVistaQR()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver al Inventario</button>
+                </div>
+                
+                <div class="qr-card-display">
+                    <!-- Aquí se dibuja el QR sin fallas -->
+                    <div id="qrCanvasLimpio"></div>
+                    <!-- Nombre de la pieza directo abajo -->
+                    <h2 id="qrNombrePiezaTexto" style="color: var(--rsb-blue); margin: 20px 0 5px 0; font-size: 20px;"></h2>
+                    <p id="qrNumParteTexto" style="color: var(--text-muted); font-size: 14px; margin: 0;"></p>
+                </div>
+
+                <button class="btn-primary" id="btnDescargarEtiqueta">💾 Descargar Etiqueta QR</button>
+            </div>
+
         </div>
 
         <div id="secEscanear" class="seccion">
             <p style="color:var(--text-muted); font-size:14px;">Enfoque el código QR de la refacción dentro del recuadro.</p>
             <div id="reader"></div>
             <div id="resultadoEscaneo"></div>
-        </div>
-    </div>
-
-    <!-- VENTANA EMERGENTE PARA EL QR (MODAL) -->
-    <div id="modalQR" class="modal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="cerrarModal()">&times;</button>
-            <h3 id="modalTituloPieza" style="color: var(--rsb-blue); margin-top: 15px; font-size: 18px;"></h3>
-            <p id="modalNumParte" style="color: var(--text-muted); font-size: 13px; margin-top: -10px; font-weight: bold;"></p>
-            
-            <div id="qrModalCanvas"></div>
-            
-            <button class="btn-primary" id="btnDescargarModal" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span>💾 Descargar Etiqueta</span>
-            </button>
         </div>
     </div>
 
@@ -194,9 +201,12 @@
                 for(let key in data) { inventario.push(data[key]); }
             }
             actualizarDatalistHojas();
-            if(modoVista === 'carpetas') volverCarpetas();
-            else if(modoVista === 'carpetaDetalle') abrirCarpeta(carpetaActual);
-            else if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
+            // Evitar recargar las vistas si el usuario está viendo un QR
+            if(document.getElementById('vistaQR').style.display !== 'block'){
+                if(modoVista === 'carpetas') volverCarpetas();
+                else if(modoVista === 'carpetaDetalle') abrirCarpeta(carpetaActual);
+                else if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
+            }
         });
 
         document.getElementById('fotoInput').addEventListener('change', function(e) {
@@ -239,7 +249,8 @@
             if(tab === 'lista') { 
                 document.getElementById('secLista').classList.add('activa'); 
                 document.getElementById('btnLista').classList.add('activo'); 
-                volverCarpetas(); detenerEscaner(); 
+                cerrarVistaQR(); // Asegura volver a la lista si estaba en el QR
+                detenerEscaner(); 
             }
             if(tab === 'escanear') { 
                 document.getElementById('secEscanear').classList.add('activa'); 
@@ -353,8 +364,9 @@
                                 <p><strong>No. Parte:</strong> ${item.numParte}</p>
                                 <p><strong>Fab:</strong> ${item.fab}</p>
                                 <p><strong>Sección:</strong> <span style="background:#e9ecef; padding:2px 6px; border-radius:4px;">${item.hoja}</span></p>
-                                <button class="btn-qr" onclick="abrirModalQR(this)" data-id="${item.numParte}">
-                                    📱 Generar / Ver QR
+                                <!-- BOTÓN QUE ABRE EL APARTADO EXCLUSIVO -->
+                                <button class="btn-qr" onclick="abrirVistaQR('${item.numParte}')">
+                                    📱 Ver Código QR
                                 </button>
                             </div>
                         </div>
@@ -372,61 +384,48 @@
         }
 
         // ==========================================
-        // SISTEMA ROBUSTO DEL MODAL QR (V14)
+        // NUEVO SISTEMA: APARTADO EXCLUSIVO DE QR
         // ==========================================
-        function abrirModalQR(boton) {
-            let numParte = boton.getAttribute('data-id');
+        function abrirVistaQR(numParte) {
             let item = inventario.find(i => i.numParte === numParte);
-            
-            if(!item) {
-                alert("Error al cargar la refacción.");
-                return;
-            }
+            if(!item) return;
 
-            // 1. ABRIR EL MODAL PRIMERO (Vital para que el QR sepa qué tamaño tiene la pantalla)
-            document.getElementById('modalQR').style.display = 'flex';
+            // Esconder la lista y mostrar la vista de QR
+            document.getElementById('vistaPrincipalInventario').style.display = 'none';
+            document.getElementById('vistaQR').style.display = 'block';
 
-            // 2. Llenar los textos de la ventana
-            document.getElementById('modalTituloPieza').innerText = item.pieza;
-            document.getElementById('modalNumParte').innerText = `ID: ${item.numParte}`;
-            
-            // 3. Limpiar el lienzo por completo
-            let contenedor = document.getElementById('qrModalCanvas');
+            // Llenar datos de texto
+            document.getElementById('qrNombrePiezaTexto').innerText = item.pieza;
+            document.getElementById('qrNumParteTexto').innerText = "ID: " + item.numParte;
+
+            // Limpiar y generar QR en el contenedor limpio
+            let contenedor = document.getElementById('qrCanvasLimpio');
             contenedor.innerHTML = "";
-
             let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
 
-            // 4. Retraso mínimo de 50ms para garantizar que el celular ya dibujó el cuadro blanco antes de inyectar el código
-            setTimeout(() => {
-                new QRCode(contenedor, {
-                    text: textoQR,
-                    width: 220,
-                    height: 220,
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            }, 50);
+            new QRCode(contenedor, {
+                text: textoQR,
+                width: 220,
+                height: 220,
+                correctLevel: QRCode.CorrectLevel.M
+            });
 
-            // 5. Configurar botón de descarga
-            document.getElementById('btnDescargarModal').onclick = function() {
-                descargarQRModal(item.numParte);
+            // Configurar botón descargar
+            document.getElementById('btnDescargarEtiqueta').onclick = function() {
+                let canvas = document.querySelector('#qrCanvasLimpio canvas');
+                if(!canvas) return;
+                let m = 20; let nC = document.createElement('canvas');
+                nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
+                let ctx = nC.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
+                let link = document.createElement('a'); link.download = 'QR_RSB_' + numParte + '.png'; link.href = nC.toDataURL('image/png'); link.click();
             };
         }
 
-        function cerrarModal() {
-            document.getElementById('modalQR').style.display = 'none';
-        }
-
-        function descargarQRModal(numParte) {
-            let canvas = document.querySelector('#qrModalCanvas canvas');
-            if(!canvas) {
-                alert("El código QR aún se está generando, intenta de nuevo en un segundo.");
-                return;
-            }
-            let m = 20; let nC = document.createElement('canvas');
-            nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
-            let ctx = nC.getContext('2d');
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
-            let link = document.createElement('a'); link.download = 'QR_RSB_' + numParte + '.png'; link.href = nC.toDataURL('image/png'); link.click();
+        function cerrarVistaQR() {
+            // Esconder la vista QR y mostrar la lista de nuevo
+            document.getElementById('vistaQR').style.display = 'none';
+            document.getElementById('vistaPrincipalInventario').style.display = 'block';
         }
 
         // ==========================================
