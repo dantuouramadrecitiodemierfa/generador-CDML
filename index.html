@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS | RSB Transmissions (V20)</title>
     <link rel="manifest" href="manifest.json">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.4.4/qrcode.min.js"></script>
+    <!-- LIBRERÍA QR CONFIABLE -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode.js/1.5.3/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     
     <!-- LIBRERÍAS DE LA NUBE FIREBASE -->
@@ -183,7 +184,7 @@
     <script>
         console.log("=================================");
         console.log("WMS RSB V20 - INICIANDO");
-        console.log("QRCode:", typeof QRCode);
+        console.log("QRCode disponible:", typeof QRCode);
         console.log("Firebase:", typeof firebase);
         console.log("=================================");
 
@@ -308,12 +309,6 @@
                 return;
             }
 
-            if (typeof QRCode === "undefined") {
-                alert("ERROR: La librería QR no se cargó correctamente.\n\nActualiza la página e inténtalo de nuevo.");
-                console.error("QRCode no está disponible.");
-                return;
-            }
-
             const btn = document.getElementById('btnGuardar');
             btn.innerText = "Subiendo a la nube ☁️...";
             btn.disabled = true;
@@ -364,16 +359,20 @@
                             `Fab: ${f}`;
 
                         // Generar QR usando qrcode.js
-                        let qrCode = new QRCode(contenedor, {
-                            text: textoQR,
-                            width: 200,
-                            height: 200,
-                            colorDark: "#000000",
-                            colorLight: "#ffffff",
-                            correctLevel: QRCode.CorrectLevel.M
-                        });
-
-                        console.log("QR nuevo generado correctamente.");
+                        try {
+                            new QRCode(contenedor, {
+                                text: textoQR,
+                                width: 200,
+                                height: 200,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.M
+                            });
+                            console.log("QR nuevo generado correctamente.");
+                        } catch (qrError) {
+                            console.error("Error generando QR:", qrError);
+                            contenedor.innerHTML = '<p style="color:red;">Error generando QR</p>';
+                        }
 
                         document.getElementById('pieza').value = "";
                         document.getElementById('num').value = "";
@@ -443,15 +442,6 @@
                 return;
             }
 
-            if (typeof QRCode === "undefined") {
-                area.style.display = 'block';
-                contenedor.innerHTML =
-                    '<p style="color:red;font-weight:bold;">' +
-                    'ERROR: La librería QR no está disponible.' +
-                    '</p>';
-                return;
-            }
-
             area.style.display = 'block';
 
             document.getElementById('textoQRPieza').innerText = item.pieza;
@@ -468,7 +458,7 @@
 
             try {
                 // Generar QR usando qrcode.js
-                let qrCode = new QRCode(contenedor, {
+                new QRCode(contenedor, {
                     text: textoQR,
                     width: 200,
                     height: 200,
@@ -566,7 +556,6 @@
                 let alerta = item.cantidad <= 3 ? 'border-left: 4px solid var(--rsb-red);' : '';
                 let badge = item.cantidad <= 3 ? `<span class="badge-danger">Stock Bajo</span>` : '';
                 
-                // Ya no hay botón de QR en la lista. Se limpia el diseño.
                 html += `
                     <div class="card" style="${alerta}">
                         <div class="card-header"><h4 class="card-title">${item.pieza}</h4>${badge}</div>
@@ -589,7 +578,6 @@
             divLista.innerHTML = html;
         }
 
-        // ==========================================
         function editarStock(n, c) {
             let i = inventario.findIndex(item => item.numParte === n);
             if(i >= 0) {
