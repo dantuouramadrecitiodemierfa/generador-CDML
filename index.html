@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador RSB</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 20px; }
+        .box { background: white; padding: 20px; border-radius: 10px; display: inline-block; width: 100%; max-width: 350px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        button { background: #0056b3; color: white; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        #qrcode { margin-top: 20px; display: flex; justify-content: center; }
+        #btnDescargar { margin-top: 15px; background: #28a745; display: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Inventario RSB</h2>
+        <input type="text" id="pieza" placeholder="Nombre de la Pieza">
+        <input type="text" id="fabricante" placeholder="Fabricante">
+        <input type="text" id="numParte" placeholder="No. de Parte">
+        <button onclick="generar()">Generar QR</button>
+        <div id="qrcode"></div>
+        <button id="btnDescargar" onclick="descargar()">Descargar Imagen</button>
+    </div>
+    <script>
+        function generar() {
+            let p = document.getElementById('pieza').value;
+            let f = document.getElementById('fabricante').value;
+            let n = document.getElementById('numParte').value;
+            if(!p || !f || !n){ alert("Llena todos los campos."); return; }
+            let qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text: `Pieza: ${p}\nFab: ${f}\nNo. Parte: ${n}`, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
+            document.getElementById('btnDescargar').style.display = 'block';
+        }
+        function descargar() {
+            let canvas = document.querySelector('#qrcode canvas');
+            let m = 40;
+            let nC = document.createElement('canvas');
+            nC.width = canvas.width + (m * 2); nC.height = canvas.height + (m * 2);
+            let ctx = nC.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, nC.width, nC.height);
+            ctx.drawImage(canvas, m, m);
+            let link = document.createElement('a');
+            link.download = 'QR_RSB.png'; link.href = nC.toDataURL('image/png'); link.click();
+        }
+    </script>
+</body>
+</html>
