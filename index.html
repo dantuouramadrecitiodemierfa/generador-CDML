@@ -3,78 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario RSB Pro V2</title>
+    <title>Inventario RSB Admin</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 10px; margin: 0; }
         .box { background: white; padding: 20px; border-radius: 10px; margin: 10px auto; width: 90%; max-width: 400px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
-        input { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 15px;}
+        input, select { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; font-size: 15px;}
         button { background: #0056b3; color: white; border: none; padding: 15px; width: 100%; cursor: pointer; border-radius: 5px; font-weight: bold; font-size: 16px; margin-top: 10px; }
         button.btn-lista { background: #17a2b8; padding: 8px; font-size: 14px; margin-top: 5px; margin-right: 5px; width: auto;}
-        
         .tabs { display: flex; gap: 5px; justify-content: center; margin-bottom: 15px; }
         .tabs button { margin: 0; background: #888; padding: 10px; font-size: 14px;}
         .tabs button.activo { background: #0056b3; }
-        
         #qrcode { margin-top: 20px; display: flex; justify-content: center; }
         #btnDescargar { margin-top: 15px; background: #28a745; display: none; }
-        
         .seccion { display: none; }
         .seccion.activa { display: block; }
-        
-        /* Estilos de Lista y Fotos */
-        .item-lista { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; box-shadow: 0px 2px 5px rgba(0,0,0,0.05);}
+        .item-lista { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; border-left: 5px solid #0056b3;}
         .item-lista h4 { margin: 0 0 5px 0; color: #0056b3; font-size: 18px;}
         .item-lista p { margin: 3px 0; font-size: 14px; color: #444; }
         .foto-pieza { width: 100%; max-height: 200px; object-fit: contain; background: #eee; border-radius: 5px; margin-bottom: 10px; display: none; }
-        
         #reader { width: 100%; margin-top: 15px; border-radius: 5px; overflow: hidden;}
-        #resultadoEscaneo { margin-top: 15px; padding: 15px; background: #e2f0d9; border-left: 5px solid #28a745; border-radius: 5px; text-align: left; font-size: 16px; display: none;}
-        
+        #resultadoEscaneo { margin-top: 15px; padding: 15px; background: #e2f0d9; border-left: 5px solid #28a745; border-radius: 5px; text-align: left; font-size: 16px; display: none; white-space: pre-wrap;}
         .file-input-wrapper { background: #e9ecef; padding: 10px; border-radius: 5px; margin: 8px 0; border: 1px dashed #ccc;}
         .file-input-wrapper input { padding: 0; border: none; background: transparent; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>📦 RSB Inventario</h2>
+        <h2>📦 RSB Admin</h2>
         
-        <!-- PESTAÑAS -->
         <div class="tabs">
-            <button id="btnNuevo" class="activo" onclick="cambiarTab('nuevo')">➕ Nuevo</button>
-            <button id="btnLista" onclick="cambiarTab('lista')">📋 Lista</button>
+            <button id="btnNuevo" class="activo" onclick="cambiarTab('nuevo')">➕ Registro</button>
+            <button id="btnLista" onclick="cambiarTab('lista')">📋 Hojas</button>
             <button id="btnEsc" onclick="cambiarTab('escanear')">📷 Escanear</button>
         </div>
 
-        <!-- 1. REGISTRAR NUEVO -->
+        <!-- REGISTRAR -->
         <div id="secNuevo" class="seccion activa">
+            <input type="text" id="hoja" list="hojasGuardadas" placeholder="Sección / Hoja (Ej. Eléctrico)">
+            <datalist id="hojasGuardadas"></datalist>
+            
             <input type="text" id="pieza" placeholder="Nombre de la Pieza">
             <input type="text" id="fab" placeholder="Fabricante">
             <input type="text" id="num" placeholder="No. de Parte (Único)">
             <input type="number" id="cant" placeholder="Cantidad en stock">
             
             <div class="file-input-wrapper">
-                <label style="font-size: 14px; color: #555; display:block; margin-bottom:5px;"><strong>📸 Foto de la refacción:</strong></label>
+                <label style="font-size: 14px; color: #555; display:block; margin-bottom:5px;"><strong>📸 Foto:</strong></label>
                 <input type="file" id="fotoInput" accept="image/*" capture="environment">
                 <img id="previewFoto" class="foto-pieza" style="margin-top: 10px;">
             </div>
 
-            <button onclick="guardarYGenerar()">Guardar en BD y Generar QR</button>
+            <button onclick="guardarYGenerar()">Guardar y Crear Etiqueta</button>
             <div id="qrcode"></div>
             <button id="btnDescargar" onclick="descargar()">Descargar Etiqueta</button>
         </div>
 
-        <!-- 2. LISTA DE INVENTARIO -->
+        <!-- LISTA Y HOJAS -->
         <div id="secLista" class="seccion">
-            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o No. Parte..." onkeyup="filtrarLista()">
+            <select id="filtroHoja" onchange="cargarLista()">
+                <option value="">Ver todas las hojas</option>
+            </select>
+            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre..." onkeyup="cargarLista()">
             <div id="contenedorLista" style="margin-top: 15px;"></div>
         </div>
 
-        <!-- 3. ESCÁNER -->
+        <!-- ESCÁNER -->
         <div id="secEscanear" class="seccion">
-            <p style="color:#555; font-weight:bold;">Apunta al QR de la refacción</p>
             <div id="reader"></div>
             <div id="resultadoEscaneo"></div>
         </div>
@@ -82,132 +79,116 @@
 
     <script>
         let escanerActivado = null;
-        let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V2')) || [];
+        let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V3')) || [];
         let fotoBase64 = "";
 
-        // Comprimir imagen al seleccionarla
         document.getElementById('fotoInput').addEventListener('change', function(e) {
             let file = e.target.files[0];
             if(!file) return;
-            
             let reader = new FileReader();
             reader.onload = function(event) {
                 let img = new Image();
                 img.onload = function() {
                     let canvas = document.createElement('canvas');
                     let ctx = canvas.getContext('2d');
-                    
-                    // Comprimir a max 400px de ancho para no saturar memoria
-                    let MAX_WIDTH = 400;
-                    let scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-                    
+                    let scaleSize = 400 / img.width;
+                    canvas.width = 400; canvas.height = img.height * scaleSize;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.6); // 60% calidad
-                    
-                    let preview = document.getElementById('previewFoto');
-                    preview.src = fotoBase64;
-                    preview.style.display = 'block';
+                    fotoBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById('previewFoto').src = fotoBase64;
+                    document.getElementById('previewFoto').style.display = 'block';
                 }
                 img.src = event.target.result;
             }
             reader.readAsDataURL(file);
         });
 
+        function actualizarDatalistHojas() {
+            let hojasUnicas = [...new Set(inventario.map(i => i.hoja))];
+            let datalist = document.getElementById('hojasGuardadas');
+            let filtro = document.getElementById('filtroHoja');
+            datalist.innerHTML = "";
+            let opcionesFiltro = '<option value="">Ver todas las hojas</option>';
+            hojasUnicas.forEach(h => {
+                if(h) {
+                    datalist.innerHTML += `<option value="${h}">`;
+                    opcionesFiltro += `<option value="${h}">Hoja: ${h}</option>`;
+                }
+            });
+            filtro.innerHTML = opcionesFiltro;
+        }
+
         function cambiarTab(tab) {
             document.querySelectorAll('.seccion').forEach(el => el.classList.remove('activa'));
             document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('activo'));
-            
-            if(tab === 'nuevo') { document.getElementById('secNuevo').classList.add('activa'); document.getElementById('btnNuevo').classList.add('activo'); detenerEscaner(); }
-            if(tab === 'lista') { document.getElementById('secLista').classList.add('activa'); document.getElementById('btnLista').classList.add('activo'); cargarLista(); detenerEscaner(); }
+            if(tab === 'nuevo') { document.getElementById('secNuevo').classList.add('activa'); document.getElementById('btnNuevo').classList.add('activo'); detenerEscaner(); actualizarDatalistHojas(); }
+            if(tab === 'lista') { document.getElementById('secLista').classList.add('activa'); document.getElementById('btnLista').classList.add('activo'); cargarLista(); detenerEscaner(); actualizarDatalistHojas(); }
             if(tab === 'escanear') { document.getElementById('secEscanear').classList.add('activa'); document.getElementById('btnEsc').classList.add('activo'); iniciarEscaner(); }
         }
 
-        // GUARDAR DATOS Y CREAR QR
         function guardarYGenerar() {
+            let h = document.getElementById('hoja').value || "General";
             let p = document.getElementById('pieza').value;
             let f = document.getElementById('fab').value;
             let n = document.getElementById('num').value.trim();
             let c = document.getElementById('cant').value;
 
-            if(!p || !f || !n || !c){ alert("Llena todos los campos de texto, compa."); return; }
+            if(!p || !f || !n || !c){ alert("Faltan datos."); return; }
 
             let indice = inventario.findIndex(item => item.numParte === n);
-            let nuevaPieza = { pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoBase64 };
+            let nuevaPieza = { hoja: h, pieza: p, fab: f, numParte: n, cantidad: c, foto: fotoBase64 };
             
             if(indice >= 0) {
-                // Si ya existe y no se tomó foto nueva, conservar la vieja
                 if(!fotoBase64) nuevaPieza.foto = inventario[indice].foto;
                 inventario[indice] = nuevaPieza;
             } else {
                 inventario.push(nuevaPieza);
             }
-            
-            try {
-                localStorage.setItem('inventarioRSB_V2', JSON.stringify(inventario));
-            } catch (e) {
-                alert("¡Memoria llena! Borra algunas piezas viejas para guardar nuevas fotos.");
-                return;
-            }
+            localStorage.setItem('inventarioRSB_V3', JSON.stringify(inventario));
 
             let qrDiv = document.getElementById('qrcode');
             qrDiv.innerHTML = "";
-            new QRCode(qrDiv, { text: n, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
+            // El QR AHORA GUARDA EL TEXTO COMPLETO PARA LOS TÉCNICOS
+            let textoQR = `Hoja: ${h}\nPieza: ${p}\nNo. Parte: ${n}\nFab: ${f}`;
+            new QRCode(qrDiv, { text: textoQR, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
             document.getElementById('btnDescargar').style.display = 'block';
             
-            alert("¡Pieza registrada!");
-            // Limpiar foto
-            fotoBase64 = "";
-            document.getElementById('previewFoto').style.display = 'none';
-            document.getElementById('fotoInput').value = "";
+            alert("¡Guardado en la Hoja: " + h + "!");
+            fotoBase64 = ""; document.getElementById('previewFoto').style.display = 'none'; document.getElementById('fotoInput').value = "";
+            actualizarDatalistHojas();
         }
 
-        // MOSTRAR Y BUSCAR EN LA BASE DE DATOS
-        function cargarLista(filtro = "") {
+        function cargarLista() {
             let divLista = document.getElementById('contenedorLista');
             divLista.innerHTML = "";
+            let filtroHoja = document.getElementById('filtroHoja').value;
+            let buscador = document.getElementById('buscador').value.toLowerCase();
             
-            let filtrados = inventario;
-            if(filtro) {
-                let txt = filtro.toLowerCase();
-                filtrados = inventario.filter(item => 
-                    item.pieza.toLowerCase().includes(txt) || 
-                    item.numParte.toLowerCase().includes(txt)
-                );
-            }
+            let filtrados = inventario.filter(item => {
+                let coincideHoja = filtroHoja === "" || item.hoja === filtroHoja;
+                let coincideTexto = item.pieza.toLowerCase().includes(buscador) || item.numParte.toLowerCase().includes(buscador);
+                return coincideHoja && coincideTexto;
+            });
 
-            if(filtrados.length === 0) {
-                divLista.innerHTML = "<p>No se encontraron piezas.</p>";
-                return;
-            }
+            if(filtrados.length === 0) { divLista.innerHTML = "<p>Vacío.</p>"; return; }
 
             filtrados.forEach(item => {
                 let imgTag = item.foto ? `<img src="${item.foto}" class="foto-pieza" style="display:block;">` : '';
                 divLista.innerHTML += `
                     <div class="item-lista">
+                        <span style="background:#444; color:white; padding:3px 8px; border-radius:10px; font-size:12px;">Hoja: ${item.hoja}</span>
                         ${imgTag}
                         <h4>${item.pieza}</h4>
                         <p><strong>Fab:</strong> ${item.fab}</p>
                         <p><strong>No. Parte:</strong> ${item.numParte}</p>
-                        <p><strong>Stock:</strong> <span style="color:#28a745; font-weight:bold;">${item.cantidad} unidades</span></p>
+                        <p><strong>Stock:</strong> <span style="color:#28a745; font-weight:bold;">${item.cantidad}</span></p>
                         <button class="btn-lista" style="background:#dc3545;" onclick="borrarPieza('${item.numParte}')">Borrar</button>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
-        function filtrarLista() {
-            let texto = document.getElementById('buscador').value;
-            cargarLista(texto);
-        }
-
-        function borrarPieza(numParte) {
-            if(confirm("¿Seguro que quieres borrar esta pieza?")) {
-                inventario = inventario.filter(item => item.numParte !== numParte);
-                localStorage.setItem('inventarioRSB_V2', JSON.stringify(inventario));
-                cargarLista(); 
-            }
+        function borrarPieza(n) {
+            if(confirm("¿Borrar?")) { inventario = inventario.filter(i => i.numParte !== n); localStorage.setItem('inventarioRSB_V3', JSON.stringify(inventario)); cargarLista(); }
         }
 
         function descargar() {
@@ -216,12 +197,9 @@
             nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
             let ctx = nC.getContext('2d');
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
-            let link = document.createElement('a');
-            link.download = 'QR_RSB_' + document.getElementById('num').value + '.png'; 
-            link.href = nC.toDataURL('image/png'); link.click();
+            let link = document.createElement('a'); link.download = 'QR_RSB.png'; link.href = nC.toDataURL('image/png'); link.click();
         }
 
-        // ESCÁNER
         function iniciarEscaner() {
             document.getElementById('resultadoEscaneo').style.display = 'none';
             if(escanerActivado) { escanerActivado.clear(); }
@@ -229,35 +207,23 @@
             escanerActivado.render(onScanSuccess);
         }
 
-        function detenerEscaner() {
-            if(escanerActivado) { escanerActivado.clear(); escanerActivado = null; }
-        }
+        function detenerEscaner() { if(escanerActivado) { escanerActivado.clear(); escanerActivado = null; } }
 
         function onScanSuccess(textoQR) {
             detenerEscaner();
             let resDiv = document.getElementById('resultadoEscaneo');
             resDiv.style.display = 'block';
             
-            let item = inventario.find(i => i.numParte === textoQR);
-            
-            if(item) {
-                let imgTag = item.foto ? `<img src="${item.foto}" class="foto-pieza" style="display:block;">` : '';
-                resDiv.style.borderLeftColor = "#28a745";
-                resDiv.style.backgroundColor = "#e2f0d9";
-                resDiv.innerHTML = `
-                    <strong>✅ ¡Pieza Encontrada!</strong><br><br>
-                    ${imgTag}
-                    <strong>Nombre:</strong> ${item.pieza}<br>
-                    <strong>Fabricante:</strong> ${item.fab}<br>
-                    <strong>No. Parte:</strong> ${item.numParte}<br>
-                    <strong>Stock en Almacén:</strong> <span style="font-size:22px; font-weight:bold; color:#0056b3;">${item.cantidad}</span>
-                `;
+            // Revisa si el texto del QR tiene el formato nuevo
+            if(textoQR.includes("No. Parte:")) {
+                resDiv.style.borderLeftColor = "#28a745"; resDiv.style.backgroundColor = "#e2f0d9";
+                resDiv.innerHTML = `<strong>✅ Pieza Leída:</strong><br><br>${textoQR}`;
             } else {
-                resDiv.style.borderLeftColor = "#dc3545";
-                resDiv.style.backgroundColor = "#f8d7da";
-                resDiv.innerHTML = `<strong>❌ Pieza no encontrada</strong><br><br>El código leído fue: ${textoQR}<br>No está registrada en el sistema.`;
+                resDiv.style.borderLeftColor = "#ffc107"; resDiv.style.backgroundColor = "#fff3cd";
+                resDiv.innerHTML = `<strong>⚠️ QR Antiguo:</strong><br>${textoQR}`;
             }
         }
+        actualizarDatalistHojas();
     </script>
 </body>
 </html>
