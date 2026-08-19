@@ -63,7 +63,10 @@
         .card-info p strong { color: var(--text); }
         
         .card-qr-box { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0;}
-        .qr-placeholder { width: 70px; height: 70px; padding: 4px; background: white; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center;}
+        /* El secreto visual está aquí: limitamos el tamaño pero el código por dentro será grande */
+        .qr-placeholder { width: 70px; height: 70px; padding: 4px; background: white; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center; overflow: hidden;}
+        .qr-placeholder canvas, .qr-placeholder img { width: 100% !important; height: auto !important; }
+        
         .btn-text { background: none; border: none; color: var(--rsb-blue); font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: underline; padding: 0;}
         
         .stock-controls { display: flex; align-items: center; padding: 10px 15px; background: var(--bg); border-top: 1px solid var(--border); gap: 15px;}
@@ -365,15 +368,19 @@
 
             divLista.innerHTML = htmlTarjetas;
 
-            listaItems.forEach((item, index) => {
-                let safeId = "qr-box-" + index;
-                let qrContainer = document.getElementById(safeId);
-                if(qrContainer) {
-                    qrContainer.innerHTML = "";
-                    let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
-                    new QRCode(qrContainer, { text: textoQR, width: 70, height: 70, correctLevel: QRCode.CorrectLevel.M });
-                }
-            });
+            // Retraso de 50 milisegundos para dejar que el celular arme las tarjetas antes de inyectar el QR
+            setTimeout(() => {
+                listaItems.forEach((item, index) => {
+                    let safeId = "qr-box-" + index;
+                    let qrContainer = document.getElementById(safeId);
+                    if(qrContainer) {
+                        qrContainer.innerHTML = "";
+                        let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
+                        // Lo generamos a 200x200 para que no falle y el CSS lo encoge a 70x70
+                        new QRCode(qrContainer, { text: textoQR, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+                    }
+                });
+            }, 50);
         }
 
         function editarStock(numParte, cambio) {
