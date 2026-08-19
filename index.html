@@ -58,14 +58,12 @@
         .card-photo { width: 80px; height: 80px; background: var(--bg); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); flex-shrink: 0;}
         .card-photo img { width: 100%; height: 100%; object-fit: cover; }
         
-        .card-info { flex: 1; text-align: left; }
-        .card-info p { margin: 0 0 6px 0; font-size: 13px; color: var(--text-muted); }
+        .card-info { flex: 1; text-align: left; overflow: hidden; }
+        .card-info p { margin: 0 0 6px 0; font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-info p strong { color: var(--text); }
         
         .card-qr-box { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0;}
-        /* El secreto visual está aquí: limitamos el tamaño pero el código por dentro será grande */
-        .qr-placeholder { width: 70px; height: 70px; padding: 4px; background: white; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center; overflow: hidden;}
-        .qr-placeholder canvas, .qr-placeholder img { width: 100% !important; height: auto !important; }
+        .qr-placeholder { width: 80px; height: 80px; padding: 4px; background: white; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center; overflow: hidden;}
         
         .btn-text { background: none; border: none; color: var(--rsb-blue); font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: underline; padding: 0;}
         
@@ -151,9 +149,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // ☁️ CONFIGURACIÓN FIREBASE (LA NUBE CON URL)
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDY9r31hs26gt_63myKdkLMsCre8dm33g0",
             authDomain: "inventario-rsb.firebaseapp.com",
@@ -166,7 +161,6 @@
         
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        // ==========================================
 
         let escanerActivado = null;
         let inventario = []; 
@@ -174,16 +168,13 @@
         let modoVista = 'carpetas';
         let carpetaActual = "";
 
-        // ESCUCHADOR EN TIEMPO REAL
         db.ref('inventario').on('value', (snapshot) => {
             const data = snapshot.val();
             inventario = [];
             if(data) {
                 for(let key in data) { inventario.push(data[key]); }
             }
-            
             actualizarDatalistHojas();
-            
             if(modoVista === 'carpetas') volverCarpetas();
             else if(modoVista === 'carpetaDetalle') abrirCarpeta(carpetaActual);
             else if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
@@ -309,7 +300,6 @@
 
         function ejecutarBusquedaGlobal() {
             let texto = document.getElementById('buscadorGlobal').value.toLowerCase().trim();
-            
             if(texto === "") {
                 if(modoVista === 'busquedaGlobal') volverCarpetas();
                 return;
@@ -332,11 +322,14 @@
             if(listaItems.length === 0) { divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; return; }
 
             let htmlTarjetas = "";
-            listaItems.forEach((item, index) => {
+            listaItems.forEach((item) => {
                 let imgTag = item.foto ? `<img src="${item.foto}">` : `<span style="color:#ccc; font-size:10px;">SIN FOTO</span>`;
                 let claseAlerta = item.cantidad <= 3 ? 'border-left: 4px solid var(--rsb-red);' : '';
                 let mensajeAlerta = item.cantidad <= 3 ? `<span class="badge-danger">Stock Bajo</span>` : '';
-                let safeId = "qr-box-" + index;
+                
+                // Creamos un ID súper robusto usando letras y números
+                let stringSeguro = item.numParte.replace(/[^a-zA-Z0-9]/g, '');
+                let safeId = "qrbox_" + stringSeguro;
 
                 htmlTarjetas += `
                     <div class="card" style="${claseAlerta}">
@@ -368,19 +361,27 @@
 
             divLista.innerHTML = htmlTarjetas;
 
-            // Retraso de 50 milisegundos para dejar que el celular arme las tarjetas antes de inyectar el QR
+            // Retraso aumentado a 300ms para asegurar que el navegador terminó de dibujar las cajas
             setTimeout(() => {
-                listaItems.forEach((item, index) => {
-                    let safeId = "qr-box-" + index;
+                listaItems.forEach((item) => {
+                    let stringSeguro = item.numParte.replace(/[^a-zA-Z0-9]/g, '');
+                    let safeId = "qrbox_" + stringSeguro;
                     let qrContainer = document.getElementById(safeId);
+                    
                     if(qrContainer) {
                         qrContainer.innerHTML = "";
                         let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
-                        // Lo generamos a 200x200 para que no falle y el CSS lo encoge a 70x70
-                        new QRCode(qrContainer, { text: textoQR, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+                        
+                        // Generado exactamente al tamaño de la caja (80x80) y con corrección baja (L) para evitar fallos
+                        new QRCode(qrContainer, { 
+                            text: textoQR, 
+                            width: 80, 
+                            height: 80, 
+                            correctLevel: QRCode.CorrectLevel.L 
+                        });
                     }
                 });
-            }, 50);
+            }, 300);
         }
 
         function editarStock(numParte, cambio) {
@@ -400,7 +401,7 @@
 
         function descargarQR(safeId, numParte) {
             let canvas = document.querySelector(`#${safeId} canvas`);
-            if(!canvas) return;
+            if(!canvas) { alert("El código QR aún no se ha generado."); return; }
             let m = 15; let nC = document.createElement('canvas');
             nC.width = canvas.width + (m*2); nC.height = canvas.height + (m*2);
             let ctx = nC.getContext('2d');
