@@ -19,19 +19,16 @@
         }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
-        /* Header Corporativo */
         .header { background: var(--surface); padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;}
         .header img { max-height: 45px; }
         .header h1 { margin: 5px 0 0 0; font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
         
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         
-        /* Pestañas Modernas */
         .tabs { display: flex; background: var(--surface); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px;}
         .tabs button { flex: 1; padding: 12px; border: none; background: transparent; font-weight: 600; font-size: 13px; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;}
         .tabs button.activo { color: var(--rsb-blue); border-bottom-color: var(--rsb-blue); background: #f8fafe; }
         
-        /* Formularios */
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
         .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; transition: 0.2s; box-sizing: border-box; background: var(--surface);}
@@ -43,11 +40,9 @@
         .seccion { display: none; }
         .seccion.activa { display: block; }
         
-        /* Tarjetas de Categorías */
         .btn-categoria { background: var(--surface); padding: 15px 20px; margin-bottom: 10px; font-size: 16px; font-weight: 600; color: var(--rsb-blue); border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
         .badge { background: var(--bg); color: var(--text-muted); padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border);}
         
-        /* Ficha Informativa (Card) */
         .card { background: var(--surface); border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid var(--border); overflow: hidden;}
         .card-header { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fafbfc;}
         .card-title { margin: 0; font-size: 16px; color: var(--rsb-blue); font-weight: 700;}
@@ -61,7 +56,6 @@
         .card-info p { margin: 0 0 6px 0; font-size: 13px; color: var(--text-muted); }
         .card-info p strong { color: var(--text); }
         
-        /* Contenedor del QR dentro de la Ficha */
         .card-qr-box { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0;}
         .qr-placeholder { width: 70px; height: 70px; padding: 4px; background: white; border: 1px solid var(--border); border-radius: 4px; }
         .btn-text { background: none; border: none; color: var(--rsb-blue); font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: underline; padding: 0;}
@@ -71,7 +65,6 @@
         .btn-circle { background: var(--surface); border: 1px solid var(--border); width: 34px; height: 34px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; color: var(--rsb-blue); display: flex; align-items: center; justify-content: center;}
         .stock-value { font-size: 18px; font-weight: bold; color: var(--text); min-width: 30px; text-align: center;}
         
-        /* Archivos y Escáner */
         .file-upload { border: 2px dashed var(--border); padding: 15px; text-align: center; border-radius: 6px; background: #fafbfc;}
         .file-upload input { width: 100%; }
         #previewFoto { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; border-radius: 6px; }
@@ -82,7 +75,6 @@
 <body>
     
     <div class="header">
-        <!-- AQUÍ SE CARGA EL LOGO DE RSB -->
         <img src="logo.png" alt="RSB Transmissions" onerror="this.style.display='none'">
         <h1>Sistema de Control WMS</h1>
     </div>
@@ -134,21 +126,23 @@
 
         <!-- 2. INVENTARIO Y FICHAS TÉCNICAS -->
         <div id="secLista" class="seccion">
+            
+            <!-- BUSCADOR GLOBAL SIEMPRE VISIBLE -->
+            <div class="input-group" style="margin-bottom: 20px;">
+                <input type="text" id="buscadorGlobal" placeholder="🔍 Buscar nombre o No. Parte en todo el almacén..." onkeyup="ejecutarBusquedaGlobal()">
+            </div>
+
             <!-- Vista de Áreas -->
             <div id="vistaCarpetas">
                 <h3 style="color: var(--text); font-size: 16px; text-align: left; margin-bottom: 15px;">Áreas de Almacén</h3>
                 <div id="contenedorCarpetas"></div>
             </div>
 
-            <!-- Vista de Fichas -->
+            <!-- Vista de Fichas (Carpetas o Resultados de búsqueda) -->
             <div id="vistaItems" style="display:none;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
                     <button onclick="volverCarpetas()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver</button>
                     <h3 id="tituloCarpeta" style="margin:0; color: var(--rsb-blue); font-size: 16px;"></h3>
-                </div>
-                
-                <div class="input-group">
-                    <input type="text" id="buscador" placeholder="Buscar por descripción o No. Parte..." onkeyup="cargarItemsCarpeta()">
                 </div>
                 
                 <div id="contenedorLista"></div>
@@ -165,8 +159,10 @@
 
     <script>
         let escanerActivado = null;
+        // Mantenemos la llave V5 para que no pierdas tus datos capturados
         let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V5')) || [];
         let fotoBase64 = "";
+        let modoVista = 'carpetas'; // 'carpetas', 'carpetaDetalle', 'busquedaGlobal'
         let carpetaActual = "";
 
         // Procesar Fotografía
@@ -249,13 +245,16 @@
             document.getElementById('fotoInput').value = "";
             
             alert("Registro guardado exitosamente.");
-            cambiarTab('lista'); // Salta a la lista para ver el registro
+            cambiarTab('lista'); 
         }
 
+        // --- SISTEMA DE NAVEGACIÓN Y BÚSQUEDA ---
+
         function volverCarpetas() {
+            modoVista = 'carpetas';
+            document.getElementById('buscadorGlobal').value = "";
             document.getElementById('vistaItems').style.display = 'none';
             document.getElementById('vistaCarpetas').style.display = 'block';
-            document.getElementById('buscador').value = "";
             
             let hojasUnicas = [...new Set(inventario.map(i => i.hoja))];
             let divCarpetas = document.getElementById('contenedorCarpetas');
@@ -275,31 +274,49 @@
         }
 
         function abrirCarpeta(hoja) {
+            modoVista = 'carpetaDetalle';
             carpetaActual = hoja;
+            document.getElementById('buscadorGlobal').value = ""; // Limpiar busqueda global
             document.getElementById('vistaCarpetas').style.display = 'none';
             document.getElementById('vistaItems').style.display = 'block';
-            document.getElementById('tituloCarpeta').innerText = hoja;
-            cargarItemsCarpeta();
+            document.getElementById('tituloCarpeta').innerText = `Sección: ${hoja}`;
+            
+            let filtrados = inventario.filter(item => item.hoja === hoja);
+            dibujarTarjetas(filtrados);
         }
 
-        function cargarItemsCarpeta() {
-            let divLista = document.getElementById('contenedorLista');
-            divLista.innerHTML = "";
-            let buscador = document.getElementById('buscador').value.toLowerCase();
+        function ejecutarBusquedaGlobal() {
+            let texto = document.getElementById('buscadorGlobal').value.toLowerCase().trim();
+            
+            if(texto === "") {
+                if(modoVista === 'busquedaGlobal') volverCarpetas();
+                return;
+            }
+
+            modoVista = 'busquedaGlobal';
+            document.getElementById('vistaCarpetas').style.display = 'none';
+            document.getElementById('vistaItems').style.display = 'block';
+            document.getElementById('tituloCarpeta').innerText = `Resultados: "${texto}"`;
             
             let filtrados = inventario.filter(item => {
-                return item.hoja === carpetaActual && (item.pieza.toLowerCase().includes(buscador) || item.numParte.toLowerCase().includes(buscador));
+                return item.pieza.toLowerCase().includes(texto) || item.numParte.toLowerCase().includes(texto);
             });
+            
+            dibujarTarjetas(filtrados);
+        }
 
-            if(filtrados.length === 0) { divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; return; }
+        function dibujarTarjetas(listaItems) {
+            let divLista = document.getElementById('contenedorLista');
+            divLista.innerHTML = "";
+
+            if(listaItems.length === 0) { divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; return; }
 
             // 1. Inyectar el HTML de las tarjetas
-            filtrados.forEach(item => {
+            listaItems.forEach(item => {
                 let imgTag = item.foto ? `<img src="${item.foto}">` : `<span style="color:#ccc; font-size:10px;">SIN FOTO</span>`;
                 let claseAlerta = item.cantidad <= 3 ? 'border-left: 4px solid var(--rsb-red);' : '';
                 let mensajeAlerta = item.cantidad <= 3 ? `<span class="badge-danger">Stock Bajo</span>` : '';
                 
-                // Generar un ID seguro para el div del QR
                 let safeId = "qr-" + btoa(item.numParte).replace(/=/g, '');
 
                 divLista.innerHTML += `
@@ -313,7 +330,7 @@
                             <div class="card-info">
                                 <p><strong>No. Parte:</strong> ${item.numParte}</p>
                                 <p><strong>Fab:</strong> ${item.fab}</p>
-                                <p><strong>Sección:</strong> ${item.hoja}</p>
+                                <p><strong>Sección:</strong> <span style="background:#e9ecef; padding:2px 6px; border-radius:4px;">${item.hoja}</span></p>
                             </div>
                             <div class="card-qr-box">
                                 <div id="${safeId}" class="qr-placeholder"></div>
@@ -330,7 +347,7 @@
             });
 
             // 2. Generar los QRs DENTRO de las tarjetas ya dibujadas
-            filtrados.forEach(item => {
+            listaItems.forEach(item => {
                 let safeId = "qr-" + btoa(item.numParte).replace(/=/g, '');
                 let qrContainer = document.getElementById(safeId);
                 if(qrContainer) {
@@ -340,6 +357,8 @@
             });
         }
 
+        // --- ACCIONES DE TARJETA ---
+
         function editarStock(numParte, cambio) {
             let indice = inventario.findIndex(item => item.numParte === numParte);
             if(indice >= 0) {
@@ -347,7 +366,10 @@
                 if(nuevaCantidad < 0) nuevaCantidad = 0; 
                 inventario[indice].cantidad = nuevaCantidad;
                 localStorage.setItem('inventarioRSB_V5', JSON.stringify(inventario));
-                cargarItemsCarpeta();
+                
+                // Recargar la vista actual para que se actualice el numerito
+                if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
+                else abrirCarpeta(carpetaActual);
             }
         }
 
@@ -360,6 +382,8 @@
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
             let link = document.createElement('a'); link.download = 'QR_RSB_' + numParte + '.png'; link.href = nC.toDataURL('image/png'); link.click();
         }
+
+        // --- ESCÁNER ---
 
         function iniciarEscaner() {
             document.getElementById('resultadoEscaneo').style.display = 'none';
