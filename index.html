@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WMS | RSB Transmissions (V19)</title>
+    <title>WMS | RSB Transmissions (V20)</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
@@ -85,7 +85,7 @@
     <div class="header">
         <img src="logo.png" alt="RSB Transmissions" onerror="this.style.display='none'">
         <h1>Sistema de Control WMS</h1>
-        <div class="cloud-badge">☁️ Conectado a la Nube (V19)</div>
+        <div class="cloud-badge">☁️ Conectado a la Nube (V20)</div>
     </div>
 
     <div class="container">
@@ -182,8 +182,8 @@
 
     <script>
         console.log("=================================");
-        console.log("WMS RSB V19 - INICIANDO");
-        console.log("QRCode:", typeof QRCode, "toCanvas:", typeof (QRCode && QRCode.toCanvas));
+        console.log("WMS RSB V20 - INICIANDO");
+        console.log("QRCode:", typeof QRCode, "toCanvas:", typeof QRCode !== "undefined" ? typeof QRCode.toCanvas : "undefined");
         console.log("Firebase:", typeof firebase);
         console.log("=================================");
 
@@ -197,8 +197,13 @@
             appId: "1:550282196380:web:df8e7b4a4b2cbaca0b0459"
         };
         
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        if (typeof firebase === "undefined") {
+            console.error("Firebase no se pudo cargar.");
+            document.body.insertAdjacentHTML('afterbegin', '<div style="background:#fee2e2;color:#b91c1c;padding:12px;text-align:center;font-weight:bold;">Error: no se pudo cargar Firebase. Revisa tu conexión a Internet.</div>');
+        } else {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = typeof firebase !== "undefined" ? firebase.database() : null;
 
         let escanerActivado = null;
         let inventario = []; 
@@ -209,7 +214,7 @@
         // Variable para guardar el numParte del QR recién creado
         let numParteRecienCreado = "";
 
-        db.ref('inventario').on('value', (snapshot) => {
+        if (db) db.ref('inventario').on('value', (snapshot) => {
             const data = snapshot.val();
             inventario = [];
             if(data) {
@@ -330,6 +335,7 @@
             };
 
             try {
+                if (!db) throw new Error('Firebase no está disponible.');
                 await db.ref('inventario/' + n).set(nuevaPieza);
 
                 btn.innerText = "Guardar en Base de Datos";
@@ -595,7 +601,7 @@
             }
         }
 
-        function borrarPieza(n) { if(confirm("¿Eliminar?")) db.ref('inventario/' + n).remove(); }
+        function borrarPieza(n) { if(confirm("¿Eliminar?") && db) db.ref('inventario/' + n).remove(); }
 
         function iniciarEscaner() {
             document.getElementById('resultadoEscaneo').style.display = 'none';
