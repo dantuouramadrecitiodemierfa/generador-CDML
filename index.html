@@ -57,7 +57,7 @@
         .card-info p strong { color: var(--text); }
         
         .card-qr-box { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0;}
-        .qr-placeholder { width: 70px; height: 70px; padding: 4px; background: white; border: 1px solid var(--border); border-radius: 4px; }
+        .qr-placeholder { width: 70px; height: 70px; padding: 4px; background: white; border: 1px solid var(--border); border-radius: 4px; display: flex; justify-content: center; align-items: center;}
         .btn-text { background: none; border: none; color: var(--rsb-blue); font-size: 11px; font-weight: bold; cursor: pointer; text-decoration: underline; padding: 0;}
         
         .stock-controls { display: flex; align-items: center; padding: 10px 15px; background: var(--bg); border-top: 1px solid var(--border); gap: 15px;}
@@ -127,18 +127,15 @@
         <!-- 2. INVENTARIO Y FICHAS TÉCNICAS -->
         <div id="secLista" class="seccion">
             
-            <!-- BUSCADOR GLOBAL SIEMPRE VISIBLE -->
             <div class="input-group" style="margin-bottom: 20px;">
                 <input type="text" id="buscadorGlobal" placeholder="🔍 Buscar nombre o No. Parte en todo el almacén..." onkeyup="ejecutarBusquedaGlobal()">
             </div>
 
-            <!-- Vista de Áreas -->
             <div id="vistaCarpetas">
                 <h3 style="color: var(--text); font-size: 16px; text-align: left; margin-bottom: 15px;">Áreas de Almacén</h3>
                 <div id="contenedorCarpetas"></div>
             </div>
 
-            <!-- Vista de Fichas (Carpetas o Resultados de búsqueda) -->
             <div id="vistaItems" style="display:none;">
                 <div style="display: flex; align-items: center; margin-bottom: 15px; gap: 10px;">
                     <button onclick="volverCarpetas()" style="background:var(--surface); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">&larr; Volver</button>
@@ -159,13 +156,11 @@
 
     <script>
         let escanerActivado = null;
-        // Mantenemos la llave V5 para que no pierdas tus datos capturados
         let inventario = JSON.parse(localStorage.getItem('inventarioRSB_V5')) || [];
         let fotoBase64 = "";
-        let modoVista = 'carpetas'; // 'carpetas', 'carpetaDetalle', 'busquedaGlobal'
+        let modoVista = 'carpetas';
         let carpetaActual = "";
 
-        // Procesar Fotografía
         document.getElementById('fotoInput').addEventListener('change', function(e) {
             let file = e.target.files[0];
             if(!file) return;
@@ -236,7 +231,6 @@
             
             localStorage.setItem('inventarioRSB_V5', JSON.stringify(inventario));
             
-            // Limpiar formulario
             document.getElementById('pieza').value = "";
             document.getElementById('num').value = "";
             document.getElementById('cant').value = "";
@@ -247,8 +241,6 @@
             alert("Registro guardado exitosamente.");
             cambiarTab('lista'); 
         }
-
-        // --- SISTEMA DE NAVEGACIÓN Y BÚSQUEDA ---
 
         function volverCarpetas() {
             modoVista = 'carpetas';
@@ -276,7 +268,7 @@
         function abrirCarpeta(hoja) {
             modoVista = 'carpetaDetalle';
             carpetaActual = hoja;
-            document.getElementById('buscadorGlobal').value = ""; // Limpiar busqueda global
+            document.getElementById('buscadorGlobal').value = ""; 
             document.getElementById('vistaCarpetas').style.display = 'none';
             document.getElementById('vistaItems').style.display = 'block';
             document.getElementById('tituloCarpeta').innerText = `Sección: ${hoja}`;
@@ -307,19 +299,23 @@
 
         function dibujarTarjetas(listaItems) {
             let divLista = document.getElementById('contenedorLista');
-            divLista.innerHTML = "";
+            
+            if(listaItems.length === 0) { 
+                divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; 
+                return; 
+            }
 
-            if(listaItems.length === 0) { divLista.innerHTML = "<p style='color:#6c757d; font-size:14px;'>No se encontraron resultados.</p>"; return; }
-
-            // 1. Inyectar el HTML de las tarjetas
-            listaItems.forEach(item => {
+            // 1. Armar todo el HTML de las tarjetas
+            let htmlTarjetas = "";
+            listaItems.forEach((item, index) => {
                 let imgTag = item.foto ? `<img src="${item.foto}">` : `<span style="color:#ccc; font-size:10px;">SIN FOTO</span>`;
                 let claseAlerta = item.cantidad <= 3 ? 'border-left: 4px solid var(--rsb-red);' : '';
                 let mensajeAlerta = item.cantidad <= 3 ? `<span class="badge-danger">Stock Bajo</span>` : '';
                 
-                let safeId = "qr-" + btoa(item.numParte).replace(/=/g, '');
+                // Generamos un ID súper seguro basado en el número de lista (index)
+                let safeId = "qr-box-" + index;
 
-                divLista.innerHTML += `
+                htmlTarjetas += `
                     <div class="card" style="${claseAlerta}">
                         <div class="card-header">
                             <h4 class="card-title">${item.pieza}</h4>
@@ -346,18 +342,20 @@
                     </div>`;
             });
 
-            // 2. Generar los QRs DENTRO de las tarjetas ya dibujadas
-            listaItems.forEach(item => {
-                let safeId = "qr-" + btoa(item.numParte).replace(/=/g, '');
+            // Inyectamos todo el HTML de un jalón
+            divLista.innerHTML = htmlTarjetas;
+
+            // 2. Generamos los QRs ahora que las cajas ya existen
+            listaItems.forEach((item, index) => {
+                let safeId = "qr-box-" + index;
                 let qrContainer = document.getElementById(safeId);
                 if(qrContainer) {
+                    qrContainer.innerHTML = ""; // Limpiar por si acaso
                     let textoQR = `Sección: ${item.hoja}\nPieza: ${item.pieza}\nNo. Parte: ${item.numParte}\nFab: ${item.fab}`;
                     new QRCode(qrContainer, { text: textoQR, width: 70, height: 70, correctLevel: QRCode.CorrectLevel.M });
                 }
             });
         }
-
-        // --- ACCIONES DE TARJETA ---
 
         function editarStock(numParte, cambio) {
             let indice = inventario.findIndex(item => item.numParte === numParte);
@@ -367,7 +365,6 @@
                 inventario[indice].cantidad = nuevaCantidad;
                 localStorage.setItem('inventarioRSB_V5', JSON.stringify(inventario));
                 
-                // Recargar la vista actual para que se actualice el numerito
                 if(modoVista === 'busquedaGlobal') ejecutarBusquedaGlobal();
                 else abrirCarpeta(carpetaActual);
             }
@@ -382,8 +379,6 @@
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,nC.width,nC.height); ctx.drawImage(canvas,m,m);
             let link = document.createElement('a'); link.download = 'QR_RSB_' + numParte + '.png'; link.href = nC.toDataURL('image/png'); link.click();
         }
-
-        // --- ESCÁNER ---
 
         function iniciarEscaner() {
             document.getElementById('resultadoEscaneo').style.display = 'none';
